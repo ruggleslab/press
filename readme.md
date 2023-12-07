@@ -6,7 +6,7 @@
 
 This repository contains the code used to create PRESS. Is is mainly written in R and Python. The code is organized into the following folders:
 
-* `data-wrangling' contains code used to prepare the data for analysis
+* `data-wrangling` contains code used to prepare the data for analysis
 * `analysis` contains code used to perform the analysis
 * `models` contains code used to create the models
 
