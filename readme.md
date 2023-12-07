@@ -18,13 +18,9 @@ This repository is a work in progress. The manuscript is currently under review 
 * [License](#license)
 * [Contact](#contact)
 
-## Installation
-
-Instructions on how to install and run the project.
-
 ## Usage
 
-Instructions and examples on how to use the project.
+This repository is mainly meant for reproducibility purposes. The code is not meant to be run as is. The data used in this project is not publicly available (it )
 
 ## License
 
