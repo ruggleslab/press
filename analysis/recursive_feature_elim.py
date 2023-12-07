@@ -28,8 +28,8 @@ sys.path.append('/Users/muller/Documents/RugglesLab')
 
 ##########
 # Import Functions
-from Pytools.plotting import plot_training_roc_curve_ci
-from Pytools.stats import bootstrap_auc_confidence
+from MattTools.plotting import plot_training_roc_curve_ci
+from MattTools.stats import bootstrap_auc_confidence
 
 ##########
 # Code Below
