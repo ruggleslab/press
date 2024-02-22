@@ -10,13 +10,13 @@ packagelist = c("ggplot2", "reshape2", "DESeq2", "grid", "gridExtra", "scales", 
 junk <- lapply(packagelist, function(xxx) suppressMessages(
     require(xxx, character.only = TRUE,quietly=TRUE,warn.conflicts = FALSE)))
 
-source("/Users/tosh/Desktop/Ruggles_Lab/code/rnaseq_scripts/rnaseq_processing_functions.R")
-source("/Users/tosh/Desktop/Ruggles_Lab/code/rnaseq_scripts/deseq_functions.R")
-source("/Users/tosh/Desktop/Ruggles_Lab/code/rnaseq_scripts/geneset_analysis_functions.R")
-source("/Users/tosh/Desktop/Ruggles_Lab/code/symbol_species_conversion_functions.R")
-source("/Users/tosh/Desktop/Ruggles_Lab/code/rnaseq_scripts/ssGSEA_custom.R")
-source("/Users/tosh/Desktop/Ruggles_Lab/code/mgc_plotting_functions.R")
-source("/Users/tosh/Desktop/Ruggles_Lab/code/mgc_file_formatting.R")
+# source("/Users/tosh/Desktop/Ruggles_Lab/code/rnaseq_scripts/rnaseq_processing_functions.R")
+# source("/Users/tosh/Desktop/Ruggles_Lab/code/rnaseq_scripts/deseq_functions.R")
+# source("/Users/tosh/Desktop/Ruggles_Lab/code/rnaseq_scripts/geneset_analysis_functions.R")
+# source("/Users/tosh/Desktop/Ruggles_Lab/code/symbol_species_conversion_functions.R")
+# source("/Users/tosh/Desktop/Ruggles_Lab/code/rnaseq_scripts/ssGSEA_custom.R")
+# source("/Users/tosh/Desktop/Ruggles_Lab/code/mgc_plotting_functions.R")
+# source("/Users/tosh/Desktop/Ruggles_Lab/code/mgc_file_formatting.R")
 
 
 ## PROCESSING

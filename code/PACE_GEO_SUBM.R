@@ -40,9 +40,9 @@ for (pkg in packages) {library(pkg, character.only = TRUE, quietly = TRUE)}
 
 # LOAD FUNCTIONS
 # space reserved for sourcing in functions
-source_url('https://raw.githubusercontent.com/mattmuller0/scripts/main/Rtools/general_functions.R')
-source_url('https://raw.githubusercontent.com/mattmuller0/scripts/main/Rtools/deseq_helper_functions.R')
-N
+source_url('https://raw.githubusercontent.com/mattmuller0/Rtools/main/general_functions.R')
+source_url('https://raw.githubusercontent.com/mattmuller0/Rtools/main/deseq_helper_functions.R')
+
 
 ###########################################################################
 #
