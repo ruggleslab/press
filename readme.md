@@ -20,7 +20,7 @@ This repository is a work in progress. The manuscript is currently under review 
 
 ## Usage
 
-This repository is mainly meant for reproducibility purposes. The code is not meant to be run as is. The data used in this project is not publicly available (it )
+This repository is mainly meant for reproducibility purposes. The code is not meant to be run as is. The data used in this project is not publicly available yet.
 
 ## License
 
