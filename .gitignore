@@ -1,1 +1,11 @@
 /.DS_Store
+
+# Folders
+data
+presentations
+publication
+output
+notebooks/archive
+*/archive
+*/.ipynb_checkpoints
+*/.ipynb_checkpoints/*
