@@ -16,12 +16,16 @@ outdir <- file.path('output', paste0(experiment, '__run_', run))
 dir.create(outdir, showWarnings = F)
 
 #======================== LIBRARIES ========================#
-packages <- c("devtools", "sys", "dplyr", "tidyverse", "ggplot2", "ggpubr", "SummarizedExperiment", "readxl", "cowplot")
-for (pkg in packages) {library(pkg, character.only = T, quietly = T)}
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(ggpubr)
+library(SummarizedExperiment)
+library(readxl)
 
 # LOAD FUNCTIONS
 # space reserved for sourcing in functions
-source_url('https://raw.githubusercontent.com/mattmuller0/scripts/main/Rtools/general_functions.R')
+source('https://raw.githubusercontent.com/mattmuller0/Rtools/main/general_functions.R')
 
 #======================== CODE ========================#
 # load in the pace_scoring data

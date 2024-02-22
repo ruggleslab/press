@@ -25,9 +25,9 @@ print(packages[!sapply(pkgs, isTRUE)])
 
 # LOAD FUNCTIONS
 # space reserved for sourcing in functions
-source_url('https://raw.githubusercontent.com/mattmuller0/scripts/main/Rtools/general_functions.R')
-source_url('https://raw.githubusercontent.com/mattmuller0/scripts/main/Rtools/plotting_functions.R')
-source_url('https://raw.githubusercontent.com/mattmuller0/scripts/main/Rtools/converting_functions.R')
+source_url('https://raw.githubusercontent.com/mattmuller0/Rtools/main/general_functions.R')
+source_url('https://raw.githubusercontent.com/mattmuller0/Rtools/main/plotting_functions.R')
+source_url('https://raw.githubusercontent.com/mattmuller0/Rtools/main/converting_functions.R')
 
 #======================== CODE ========================#
 # load in the data
