@@ -1,0 +1,5 @@
+{
+    "output": ["../output/geneset_reduction"],
+    "method": ["rfe"]
+  }
+  
