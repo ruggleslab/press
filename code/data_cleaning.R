@@ -25,10 +25,6 @@ packages <- c(
   "BiocManager",
   "SummarizedExperiment",
   "gridExtra",
-  # "crosstable",
-  # "ggalluvial",
-  # "alluvial",
-  # "flextable",
   "reshape2",
   "plyr",
   "dplyr",
@@ -46,9 +42,9 @@ source_url("https://raw.githubusercontent.com/mattmuller0/scripts/main/Rtools/ge
 source_url("https://raw.githubusercontent.com/mattmuller0/scripts/main/Rtools/deseq_helper_functions.R")
 
 # Output directory
-experiment <- 'data-wrangling'
-outdir <- file.path('output', paste0(experiment, '__',format(Sys.time(),"%F"), '/'))
-dir.create(outdir, showWarnings = F)
+experiment <- 'data_cleaning'
+outdir <- file.path('output', experiment)
+dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 
 
 
@@ -80,7 +76,6 @@ duke_metadata = read.csv('data/GSE158765/MetaData_samples.csv') %>%
 #                                 from=unique(duke_metadata_tosh$cohort),
 #                                 to=c(unique(duke_metadata_tosh$characteristic__treatment_drug_label)[-1],"washout")
 #                                 )
-
 
 # prep the full pace count data
 pace_counts <- read.table('data/pace/rnaseq/pace_platelet_quant.featurecounts.counts.unstr.txt', header=T, row.names=1, sep='\t')

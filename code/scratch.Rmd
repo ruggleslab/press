@@ -2,7 +2,7 @@
 title: "Scratch R Code"
 author: "Matthew Muller"
 output:
-  html_document:
+  pdf_document:
     toc: true
     toc_float: true
 ---
@@ -13,10 +13,10 @@ output:
 dat <- read.csv('data/clean/pace/features.csv', row.names=1)
 
 ComplexHeatmap::Heatmap(
-    cor(dat, method = 'spearman'), 
+    cor(dat, method = 'spearman'),
     name = 'Rho',
     col = circlize::colorRamp2(c(-1, 0, 1), c("blue", "white", "red")),
-    show_row_names = TRUE, 
+    show_row_names = TRUE,
     show_column_names = FALSE,
     row_names_gp = grid::gpar(fontsize = 4)
     )

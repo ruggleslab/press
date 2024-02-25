@@ -50,8 +50,6 @@ from sklearn.preprocessing import StandardScaler
 scaler = StandardScaler()
 X = pd.DataFrame(scaler.fit_transform(X), columns=X.columns, index=X.index)
 dump(scaler, 'models/press_reduction_scaler.joblib')
-
-
 print('Original shape:', X.shape)
 
 #======================== RFE ========================#

@@ -129,7 +129,9 @@ press <- read.csv('data/clean/press_genes.csv', header = F) %>% unlist
 
 
 # Normalize counts
-countsNormalized <- counts(gse65705_dds, normalize=T) %>% as.data.frame %>% add_missing_rows(press)
+countsNormalized <- counts(gse65705_dds, normalize=T) %>% 
+  as.data.frame %>% 
+  add_missing_rows(press)
 countsNormalized <- countsNormalized[press,]
 
 # setting labels as {0:NSTEMI, 1:STEMI}

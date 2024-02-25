@@ -14,13 +14,66 @@ This repository is a work in progress. The manuscript is currently under review 
 
 ## Table of Contents
 
-* [Usage](#usage)
-* [License](#license)
-* [Contact](#contact)
+* PRESS
+ ├──code
+ │  ├──data-wrangling.R
+ │  ├──extract_weights.py
+ │  ├──feature_selection.py
+ │  ├──gene_qc_investigation.R
+ │  ├──GSE65705_data_cleaning.R
+ │  ├──harp_predictions.R
+ │  ├──PACE_GEO_SUBM.R
+ │  ├──pace_press_scoring_tiles.R
+ │  ├──pace_scoring_investigation.R
+ │  ├──platelet-hyper-hypo-analysis-3-agr-control.R
+ │  ├──platelet-pace_analysis_master_2.R
+ │  ├──run_press.py
+ │  ├──scratch.html
+ │  └──scratch.Rmd
+ ├──config
+ │  └──params.json
+ ├──models
+ │  ├──jobs
+ │  │  ├──press451.joblib
+ │  │  └──press451_with_scaler.joblib
+ │  ├──press_reduction_scaler.joblib
+ │  └──weights
+ │     ├──press451
+ │     │  └──estimators.npy
+ │     └──press451_with_scaler
+ │        ├──steps.npy
+ │        └──voting__estimators.npy
+ ├──notebooks
+ │  ├──data-cleaning.ipynb
+ │  ├──feature_selection.ipynb
+ │  ├──harp_hyper_v_hypo_predictions.ipynb
+ │  ├──model-exploring.ipynb
+ │  ├──model_testing.ipynb
+ │  └──model_testing_new_genesets.ipynb
+ ├──readme.md
+ └──src
+    ├──data_functions.py
+    ├──feature_selection.py
+    ├──tosh_rnaseq_scripts
+    │  ├──deseq_functions.R
+    │  ├──geneset_analysis_functions.R
+    │  ├──mgc_plotting_functions.R
+    │  ├──overlap_finder_function.R
+    │  ├──rnaseq_analysis_README.docx
+    │  ├──rnaseq_processing_functions.R
+    │  ├──ssGSEA_custom.R
+    │  ├──symbol_species_conversion_functions.R
+    │  └──TEMPLATE_analysis_master.R
+    └──validation_functions.py
 
 ## Usage
 
-This repository is mainly meant for reproducibility purposes. The code is not meant to be run as is. The data used in this project is not publicly available yet.
+* platelet-hyper-hypo-analysis-3-agr-control.R
+  * This script was used to perform the analysis of the platelet hyper/hypo geneset creation and analysis
+* model_testing.ipynb
+  * This notebook was used to test the PRESS model
+* run_press.py
+    * This script was used to run the PRESS model
 
 ## License
 

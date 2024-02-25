@@ -21,9 +21,7 @@ write(notes, file.path(outdir, "notes.txt"))
 library(lintr) #nolint
 library(httpgd) #nolint
 library(languageserver) #nolint
-library(devtools)
 library(tidyverse)
-library(glue)
 
 # LOAD FUNCTIONS
 # space reserved for sourcing in functions

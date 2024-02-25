@@ -1,5 +1,4 @@
 {
-    "output": ["../output/geneset_reduction"],
-    "method": ["rfe"]
+    "normalization": ["log2-mor"],
   }
   
