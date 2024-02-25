@@ -45,7 +45,7 @@ source_url('https://raw.githubusercontent.com/mattmuller0/scripts/main/Rtools/ge
 
 
 collect_counts_from_folder <- function(folder_path, reads_column="counts", id_var="Gene", sorted=T) {
-  require(reader)
+  require(readr)
   require(dplyr)
   # Get the list of files in the folder
   file_list <- list.files(path = folder_path, full.names = TRUE)
