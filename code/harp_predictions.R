@@ -160,7 +160,7 @@ with(harp_metadata[harp_selection,], table(Angiography.Report))
 
 
 # get an adjusted odds ratio of the two groups
-library(oddsratio)
+library(oddsratio) # nolint
 library(mfx) # nolint
 
 

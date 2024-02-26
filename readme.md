@@ -4,13 +4,9 @@
 
 ## Description
 
-This repository contains the code used to create PRESS. Is is mainly written in R and Python. The code is organized into the following folders:
+This repository contains the code used to create PRESS. Is is mainly written in R and Python.
 
-* `data-wrangling` contains code used to prepare the data for analysis
-* `analysis` contains code used to perform the analysis
-* `models` contains code used to create the models
-
-This repository is a work in progress. The manuscript is currently under review and will be linked here once it is published.
+The code as is relies on a config file to run. The config file is located in the config folder and is called `params.json`.
 
 ## Table of Contents
 

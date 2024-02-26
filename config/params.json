@@ -1,4 +1,6 @@
 {
     "normalization": ["log2-mor"],
+    "geneset_path": ["output/feature_selection/rfe/ada/selected_features.csv"],
+    "outdir": ["output/"]
   }
   

@@ -7,6 +7,11 @@
 # Date: 2024-02-24
 # Script Name: feature_selection
 
+'''
+The purpose of this script is to perform pythonic feature selection on the data. This will be done using a variety of methods, including Recursive Feature Elimination (RFE) and Sequential Feature Selection (SFS). The goal is to reduce the number of features to a manageable level, while still retaining the most important features. This will be done using a variety of classifiers, including Logistic Regression, Random Forest, and AdaBoost. The results will be saved to the output directory for further analysis.
+'''
+
+
 #======================== SETUP ========================#
 
 # General libaries

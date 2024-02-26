@@ -5,14 +5,13 @@
 ###########################################################################
 # Author: Matthew Muller
 # Date: 2023-06-12
-# Script Name: pace_press_scoring_tiles
+# Script Name: press_scoring_associations
 # Notes:
-# This is a script to break up the scoring of the PACE Press data into n-tiles and check for differences in the scores between the tiles in terms of the cliniical variables.
+# Now that we have have a good model, we can check to see
 
 # Output directory:
-experiment <- "pace_press_scoring_tiles"
-run <- 4
-outdir <- file.path('output', paste0(experiment, '__run_', run))
+experiment <- "press_scoring_associations"
+outdir <- file.path('output', experiment)
 dir.create(outdir, showWarnings = F)
 
 #======================== LIBRARIES ========================#
@@ -30,10 +29,10 @@ source('https://raw.githubusercontent.com/mattmuller0/Rtools/main/general_functi
 source('https://raw.githubusercontent.com/mattmuller0/Rtools/main/plotting_functions.R')
 source('https://raw.githubusercontent.com/mattmuller0/Rtools/main/stats_functions.R')
 
-#======================== CODE ========================#
+#======================== PACE ========================#
 # load in the scores
 # press_scores <- read_xlsx('docs/pace_scoring_prior_set.xlsx')
-press_scores <- read_xlsx('docs/pace_scoring.xlsx')
+press_scores <- read_xlsx('data/pace_scoring.xlsx')
 
 # set the row names to the subject ids
 press_scores <- press_scores %>%
@@ -58,7 +57,7 @@ metadata <- metadata %>%
         # add tiles
         tile_2 = as.factor(ntile(scores, 2)),
         tile_3 = as.factor(ntile(scores, 3)),
-        tile_4 = as.factor(ntile(scores, 4)),
+        tile_4 = as.factor(ntile(scores, 4))
         ) %>%
         # make censor variables factors
         mutate_at(vars(starts_with('censor')), as.factor)
@@ -162,9 +161,7 @@ mace_plots <- plot_grid(p2, p3, p4, nrow = 3)
 # save the plots
 ggsave(file.path(outdir, 'pace_press_scoring_tiles_censor_MACE.pdf'), mace_plots, width = 10, height = 10)
 
-
-
-#======================== Correlation Plots ========================#
+#========= Correlation Plots =========#
 # get the correlation between the scores and the epi variables
 scores <- metadata$scores
 epi_variables <- metadata %>%
@@ -286,7 +283,6 @@ p <- epi_cor %>%
     # add vertical lines
     geom_vline(xintercept = 1:length(epi_variables), linetype = 'dashed', alpha = 0.2) +
     labs(x = 'Epi Variable', y = 'Correlation to \nPACE Press Score', title = 'Correlation of Epi Variables to PACE Press Score ANTIPLATELET ONLY')
-p
 # save the plot
 ggsave(file.path(outdir, 'pace_press_scoring_epi_correlation_on_antiplt.pdf'), p, width = 10, height = 10)
 write.csv(epi_cor[, c('variable', 'correlation', 'p')], file.path(outdir, 'pace_press_scoring_epi_correlation_on_antiplt.csv'))
@@ -383,3 +379,30 @@ write.csv(label_high_low_tab, file.path(outdir, 'pace_press_scoring_high_low_lab
 
 stats_df %>% dplyr::select(labels)
 table(stats_df$labels)
+
+#======================== EVENTS BY PRESS ========================#
+dir.create(file.path(outdir, 'events_by_press'), showWarnings = F)
+# So now let's look at the events by PRESS
+censors <- grep('censor', colnames(metadata), value = T)
+
+# make a table of the events by press
+events_table_long <- metadata %>%
+    dplyr::select(censors, scores) %>%
+    pivot_longer(cols = c(censors), names_to = 'event', values_to = 'censor') %>%
+    group_by(event, censor)
+summary_table <- events_table_long %>%
+    summarise(
+        mean_score = mean(scores, na.rm = T),
+        sd_score = sd(scores, na.rm = T),
+        n = n(),
+        n_censored = sum(censor == 1, na.rm = T),
+        n_uncensored = sum(censor == 0, na.rm = T)
+        )
+write.csv(summary_table, file.path(outdir, 'events_by_press', 'summary_table.csv'))
+stats_table <- events_table_long %>%
+    group_by(event) %>%
+    do(
+        as.data.frame(stats_table(., 'censor', 'scores'))
+        )
+write.csv(stats_table, file.path(outdir, 'events_by_press', 'stats_table.csv'))
+
