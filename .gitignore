@@ -5,6 +5,7 @@ data
 presentations
 publication
 output
+logs
 notebooks/archive
 */archive
 */.ipynb_checkpoints

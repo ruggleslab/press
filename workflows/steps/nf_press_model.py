@@ -8,6 +8,11 @@
 # Script Name: press_model
 
 #======================== SETUP ========================#
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument('--geneset_path', help='Path to the geneset file')
+parser.add_argument('--outdir', help='Path to the output directory')
+args = parser.parse_args()
 
 # General libaries
 import os
@@ -31,8 +36,8 @@ from MattTools import utils, plotting
 # Root directory
 root_dir = os.getcwd()
 # Output directory
-experiment = "press_model_rfeada"
-outdir = os.path.join(root_dir, "output", experiment) + "/"
+experiment = "press_model_rferf"
+outdir = os.path.join(root_dir, args.outdir, experiment) + "/"
 
 # Create output directory if it doesn't exist
 if not os.path.exists(outdir):
@@ -42,31 +47,43 @@ if not os.path.exists(outdir):
 utils.set_random_seed(420)
 utils.hide_warnings()
 
-# load the params json
-params = pd.read_json('config/params.json', typ='series')
+def test_model(X, y, outdir):
+    os.makedirs(outdir, exist_ok=True)
+    X = X[genes]
+    
+    report = metrics.classification_report(y, model.predict(X))
+    with open(outdir+'classification_report.txt', 'w') as f:
+        f.write(report)
+        
+    plotting.plot_roc_curve_ci(model, X, y, title='ROC Curve', save_path=outdir+'roc_curve.png')
+    plotting.plot_confusion_matrix(y, model.predict(X), outdir+'confusion_matrix.png')
+    plt.close('all')
+    
+    # save the predictions, prediction probabilities, and true labels
+    df = pd.DataFrame({
+        'True': y,
+        'Predicted': model.predict(X),
+        'Probabilities': model.predict_proba(X)[:,1]
+    })
+    sns.histplot(df['Probabilities'], kde=True)
+    plt.savefig(outdir+'probabilities_hist.png')
+    plt.close('all')
+    sns.boxplot(x='True', y='Probabilities', data=df)
+    plt.savefig(outdir+'probabilities_boxplot.png')
+    df.to_csv(outdir+'predictions.csv', index=False)
 
 #======================== CODE ========================#
-# Load the data
-path = 'data/clean/'
+# start off by running the prep_datasets.R file
+os.system('Rscript code/prep_datasets.R')
 
-genes = pd.read_table(params['geneset_path'][0]).values.flatten()
+genes = pd.read_table(args.geneset_path).values.flatten()
 
 genes_df = pd.DataFrame(genes, columns=['Gene'])
 genes_df.to_csv(outdir + 'genes.csv', index=False)
 
-X_pace = pd.read_csv(path+'pace/features.csv', index_col=0, header=0)
-y_pace = pd.read_csv(path+'pace/labels.csv').to_numpy()[:,0]
-
-X_duke = pd.read_csv(path+'duke/features_group1.csv')
-y_duke = pd.read_csv(path+'duke/labels_group1.csv').to_numpy()[:,0]
-
-# X_test2 = pd.read_csv(path+'duke/features_group2.csv')
-# y_test2 = pd.read_csv(path+'duke/labels_group2.csv').to_numpy()[:,0]
-
-# subset to just the genes
+X_pace = pd.read_csv('output/prep_datasets/derivation/normalized_counts.csv', index_col=0, header=0).T
 X_pace = X_pace[genes]
-X_duke = X_duke[genes]
-# X_test2 = X_test2[genes]
+y_pace = pd.read_csv('output/prep_datasets/derivation/label.csv')['hypercohort_inrnaseq_AP']
 
 #======================== Modeling ========================#
 os.makedirs(outdir+'/modeling', exist_ok=True)
@@ -105,7 +122,7 @@ model = VotingClassifier(
     voting='soft',
     n_jobs=-1,
     )
-model = AdaBoostClassifier(learning_rate=0.1, n_estimators=1000)
+model = RandomForestClassifier(class_weight='balanced', n_estimators=100, random_state=seeds[0])
 
 cv = model_selection.GridSearchCV(
     model, parameters,
@@ -129,13 +146,31 @@ plotting.plot_training_roc_curve_ci(
     cv = cv,
     save_path = outdir+'/modeling/'+'pace_training_roc_curve.png'
     )
-#======================== Evaluation ========================#
-######## Duke group 1
-os.makedirs(outdir+'/evaluation/'+'duke', exist_ok=True)
-duke_classification_report = metrics.classification_report(y_duke, model.predict(X_duke))
-with open(outdir+'/evaluation/'+'duke/'+'classification_report.txt', 'w') as f:
-    f.write(duke_classification_report)
-plotting.plot_roc_curve_ci(model, X_duke, y_duke, title='Duke Cohort ROC Curve', save_path=outdir+'/evaluation/'+'duke/'+'duke_roc_curve.png')
 
-########## HARP
-# os.mkdir(outdir+'/evaluation/'+'harp')
+
+#======================== Validation ========================#
+######## Duke group 1
+os.makedirs(outdir+'/evaluation/', exist_ok=True)
+X_duke_t1 = pd.read_csv('output/prep_datasets/duke_t1/normalized_counts.csv', index_col=0, header=0).T
+y_duke_t1 = pd.read_csv('output/prep_datasets/duke_t1/label.csv')['hypercohort']
+test_model(X_duke_t1, y_duke_t1, outdir+'/evaluation/'+'duke_t1/')
+
+######## Duke group 2
+X_duke_t2 = pd.read_csv('output/prep_datasets/duke_t2/normalized_counts.csv', index_col=0, header=0).T
+y_duke_t2 = pd.read_csv('output/prep_datasets/duke_t2/label.csv')['hypercohort']
+test_model(X_duke_t2, y_duke_t2, outdir+'/evaluation/'+'duke_t2/')
+
+########## HARP MI_v_Obstr
+X_harp = pd.read_csv('output/prep_datasets/harp/normalized_counts.csv', index_col=0, header=0).T
+y_harp = pd.read_csv('output/prep_datasets/harp/label.csv')['MI_v_Obstr']
+test_model(X_harp, y_harp, outdir+'/evaluation/'+'harp/')
+
+########## SLE
+X_sle = pd.read_csv('output/prep_datasets/sle/normalized_counts.csv', index_col=0, header=0).T
+y_sle = pd.read_csv('output/prep_datasets/sle/label.csv')['Diagnosis']
+test_model(X_sle, y_sle, outdir+'/evaluation/'+'sle/')
+
+########## COVID
+X_covid = pd.read_csv('output/prep_datasets/covid/normalized_counts.csv', index_col=0, header=0).T
+y_covid = pd.read_csv('output/prep_datasets/covid/label.csv')['Cohort']
+test_model(X_covid, y_covid, outdir+'/evaluation/'+'covid/')
