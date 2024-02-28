@@ -11,7 +11,7 @@
 
 # Output directory:
 experiment <- 'pace_scoring_investigation'
-run <- 1
+run <- 2
 outdir <- file.path('output', paste0(experiment, '__run_', run))
 dir.create(outdir, showWarnings = F)
 

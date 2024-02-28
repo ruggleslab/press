@@ -1,4 +1,5 @@
 #!/bin/bash
+
 # if the log exists wipe it
 if [ -f logs/press_model_$(date +"%Y%m%d").log ]; then
     rm logs/press_model_$(date +"%Y%m%d").log

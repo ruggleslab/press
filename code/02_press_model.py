@@ -104,8 +104,8 @@ from sklearn.naive_bayes import GaussianNB
 seeds = [1148093, 1095286, 1665788, 97057, 152878, 4543, 277452, 295106, 191278, 701043, 81388, 951209, 1327001, 527903, 1148093, 1095286, 1665788, 97057, 152878, 4543, 277452, 295106, 191278, 701043, 81388, 951209, 1327001, 527903]
 n = 28
 parameters = {
-    'rf0__max_features': ['log2', 'sqrt', 'auto'],
-    'rf0__n_estimators': [10, 100, 200],
+    # 'rf0__max_features': ['log2', 'sqrt', 'auto'],
+    'rf0__n_estimators': [20, 50, 100],
     'rf0__class_weight': ['balanced', 'balanced_subsample'],
     'rf0__random_state': seeds,
     'extraTrees0__n_estimators': [10, 100, 200],
@@ -126,7 +126,7 @@ model = VotingClassifier(
     voting='soft',
     n_jobs=-1,
     )
-model = RandomForestClassifier(class_weight='balanced', n_estimators=100, random_state=seeds[0])
+# model = RandomForestClassifier(class_weight='balanced', n_estimators=100, random_state=seeds[0])
 
 cv = model_selection.GridSearchCV(
     model, parameters,

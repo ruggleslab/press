@@ -406,3 +406,12 @@ stats_table <- events_table_long %>%
         )
 write.csv(stats_table, file.path(outdir, 'events_by_press', 'stats_table.csv'))
 
+# barplot of the boxplot of censored and uncensored events by press
+p <- events_table_long %>%
+    ggplot(aes(x = event, y = scores, fill = factor(censor))) +
+    geom_boxplot() +
+    theme_matt(16) +
+    labs(x = 'Event', y = 'Proportion', title = NULL, fill = 'Event') +
+    theme_bw(24) +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1))
+ggsave(file.path(outdir, 'events_by_press', 'event_boxplot.pdf'), p, width = 20, height = 8)
