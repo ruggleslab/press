@@ -54,6 +54,7 @@ utils.hide_warnings()
 def test_model(X, y, outdir):
     os.makedirs(outdir, exist_ok=True)
     X = X[genes]
+    X = pd.DataFrame(scaler.transform(X), index=X.index, columns=X.columns)
     
     report = metrics.classification_report(y, model.predict(X))
     with open(outdir+'classification_report.txt', 'w') as f:
@@ -78,7 +79,7 @@ def test_model(X, y, outdir):
 
 #======================== CODE ========================#
 # start off by running the datasets.R file
-os.system('Rscript code/datasets.R')
+# os.system('Rscript code/01_prep_datasets.R' + ' ' + args.json)
 
 genes = pd.read_table(params['geneset']).values.flatten()
 
@@ -88,6 +89,10 @@ genes_df.to_csv(outdir + 'genes.csv', index=False)
 X_pace = pd.read_csv(f'{indir}/derivation/normalized_counts.csv', index_col=0, header=0).T
 X_pace = X_pace[genes]
 y_pace = pd.read_csv(f'{indir}/derivation/label.csv')['hypercohort_inrnaseq_AP']
+
+scaler = preprocessing.StandardScaler()
+X_pace = pd.DataFrame(scaler.fit_transform(X_pace), index=X_pace.index, columns=X_pace.columns)
+dump(scaler, outdir+'scaler.joblib')
 
 #======================== Modeling ========================#
 os.makedirs(outdir+'/modeling', exist_ok=True)
@@ -178,3 +183,13 @@ test_model(X_sle, y_sle, outdir+'/evaluation/'+'sle/')
 X_covid = pd.read_csv(f'{indir}/covid/normalized_counts.csv', index_col=0, header=0).T
 y_covid = pd.read_csv(f'{indir}/covid/label.csv')['Cohort']
 test_model(X_covid, y_covid, outdir+'/evaluation/'+'covid/')
+
+########## MACLE2
+X_pace = pd.read_csv(f'{indir}/MACLE2/normalized_counts.csv', index_col=0, header=0).T
+y_pace = pd.read_csv(f'{indir}/MACLE2/label.csv')['censor_MACLE2']
+test_model(X_pace, y_pace, outdir+'/evaluation/'+'MACLE2/')
+
+########## PAD
+X_pace = pd.read_csv(f'{indir}/PAD/normalized_counts.csv', index_col=0, header=0).T
+y_pace = pd.read_csv(f'{indir}/PAD/label.csv')['PAD']
+test_model(X_pace, y_pace, outdir+'/evaluation/'+'PAD/')

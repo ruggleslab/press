@@ -18,9 +18,9 @@ def predict(data_path, model):
         )
     
     # get the predictions and scores
-    preds = model['voting'].predict_proba(data)[::,1]
+    preds = model.predict_proba(data)[::,1]
     # if the shape of the data is [n, < 3] then don't scale
-    if data.shape[1] > 3:
+    if data.shape[1] < 3:
         print("Using predefined scaling.")
         # predefined mean is 0.178 and std is 0.858
         scores = (preds - 0.178) / 0.858

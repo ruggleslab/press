@@ -83,15 +83,6 @@ pace_data <- prep_data(
     params = params
     )
 
-pace_counts <- read.table('output/run7_rmoutliers2_agesexcontrol_withpaired_20220422/rna_processing/concat_count_files.txt', row.names = 1)
-hypercohort_metatable <- read.csv('output/run7_rmoutliers2_agesexcontrol_withpaired_20220422/rna_processing/metatable_in.csv', row.names = 1)
-pace_data <- prep_data(
-    pace_counts, 
-    hypercohort_metatable, 
-    file.path(outdir, 'pace'),
-    params = params
-    )
-
 #======================== DUKE ========================#
 duke_counts <- read.csv('data/duke_validation_run3/dukerawcounttable_conv.csv', row.names = 1)
 duke_subjects_id <- rownames(read.csv('data/clean/duke_longitudinal_group.csv', row.names = 1))
@@ -233,7 +224,30 @@ covid_data <- prep_data(
     params = params
     )
 
+#======================== PAD ========================#
+pace_dds <- readRDS('data/pace/dds.rds')
+pace_counts <- assay(pace_dds)
+pace_metatable <- as.data.frame(colData(pace_dds))
+pace_data <- prep_data(
+    pace_counts, 
+    pace_metatable, 
+    file.path(outdir, 'PAD'),
+    params = params
+    )
 
+#======================== MACLE2 ========================#
+pace_dds <- readRDS('data/pace/dds.rds')
+pace_counts <- assay(pace_dds)
+pace_metatable <- as.data.frame(colData(pace_dds))
+# remove the NA values
+pace_metatable <- pace_metatable %>% drop_na(censor_MACLE2)
+pace_counts <- pace_counts[, rownames(pace_metatable)]
+pace_data <- prep_data(
+    pace_counts, 
+    pace_metatable, 
+    file.path(outdir, 'MACLE2'),
+    params = params
+    )
 
 #======================== END ========================#
 writeLines(capture.output(sessionInfo()), file.path(outdir, "session.log"))

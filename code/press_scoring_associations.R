@@ -383,11 +383,11 @@ table(stats_df$labels)
 #======================== EVENTS BY PRESS ========================#
 dir.create(file.path(outdir, 'events_by_press'), showWarnings = F)
 # So now let's look at the events by PRESS
-censors <- grep('censor', colnames(metadata), value = T)
+censors <- grep('censor|bleed', colnames(metadata), value = T)
 
 # make a table of the events by press
 events_table_long <- metadata %>%
-    dplyr::select(censors, scores) %>%
+    dplyr::select(censors, scores, preds) %>%
     pivot_longer(cols = c(censors), names_to = 'event', values_to = 'censor') %>%
     group_by(event, censor)
 summary_table <- events_table_long %>%
@@ -399,19 +399,125 @@ summary_table <- events_table_long %>%
         n_uncensored = sum(censor == 0, na.rm = T)
         )
 write.csv(summary_table, file.path(outdir, 'events_by_press', 'summary_table.csv'))
-stats_table <- events_table_long %>%
+statsTab <- events_table_long %>%
     group_by(event) %>%
     do(
         as.data.frame(stats_table(., 'censor', 'scores'))
         )
-write.csv(stats_table, file.path(outdir, 'events_by_press', 'stats_table.csv'))
+write.csv(statsTab, file.path(outdir, 'events_by_press', 'stats_table.csv'))
 
 # barplot of the boxplot of censored and uncensored events by press
 p <- events_table_long %>%
     ggplot(aes(x = event, y = scores, fill = factor(censor))) +
     geom_boxplot() +
     theme_matt(16) +
-    labs(x = 'Event', y = 'Proportion', title = NULL, fill = 'Event') +
+    labs(x = NULL, y = 'PRESS Score', title = NULL, fill = 'Event') +
     theme_bw(24) +
-    theme(axis.text.x = element_text(angle = 90, hjust = 1))
-ggsave(file.path(outdir, 'events_by_press', 'event_boxplot.pdf'), p, width = 20, height = 8)
+    theme(axis.text.x = element_text(angle = 90, hjust = 1), legend.position = 'top') +
+    scale_fill_manual(values = c('blue', 'red'), labels = c('No Event', 'Event'))
+ggsave(file.path(outdir, 'events_by_press', 'event_boxplot.pdf'), p, width = 22, height = 8)
+
+
+#======================== Timepoint 2 ========================#
+dir.create(file.path(outdir, 'timepoints'), showWarnings = F)
+# PRESS Scoring at Timepoint 2
+pace_path <- '../../datasets/pace/platelet_rna_filtered/dds.rds'
+pace_dds <- readRDS(pace_path)
+pace_counts <- normalize_counts(pace_dds, method = 'mor', log = T) %>% 
+    add_missing_rows(genes) %>% 
+    .[genes, ] %>%
+    t()
+write.csv(pace_counts, file.path(outdir, 'timepoints', 'pace_counts_press451.csv'))
+dim(pace_counts)
+
+cmd <- glue::glue(
+'python code/run_press.py --data {file.path(outdir, "timepoints", "pace_counts_press451.csv")} --out {file.path(outdir, "timepoints", "pace_press_scores_timepoint2.csv")}'
+)
+system(cmd)
+
+# get the intersect of the press scores and the timepointDat
+samples <- intersect(rownames(press_scores), rownames(timepointDat))
+timepointDat[samples, c('preds', 'scores')] <- press_scores[samples, c('preds', 'scores')]
+
+# load the scores
+press_scores_timepoint2 <- read.csv(file.path(outdir, 'timepoints', 'pace_press_scores_timepoint2.csv'), row.names = 1)
+timepoint_metadata <- as.data.frame(colData(pace_dds))
+timepointDat <- cbind(timepoint_metadata, press_scores_timepoint2)
+
+# only keep the values with duplicates in ID
+timepointDat$ID <- stringr::str_replace_all(rownames(timepointDat), '\\.3', '')
+timepointDat <- timepointDat[duplicated(timepointDat$ID)|duplicated(timepointDat$ID, fromLast = T),]
+timeDat <- timepointDat %>% 
+    dplyr::select(ID, timepoint, scores, censor_MACLE2) %>%
+    pivot_wider(names_from = timepoint, values_from = scores) %>%
+    mutate(waterfall = followup - baseline)
+
+p <- timeDat %>%
+    ggplot(aes(x = baseline, y = followup)) +
+    geom_point() +
+    stat_cor(method = 'spearman') +
+    ggpmisc::stat_poly_eq(vjust = 2.5) +
+    geom_abline(intercept = 0, slope = 1, linetype = 'dashed') +
+    geom_smooth(method = 'lm', se = TRUE) +
+    theme_matt(14) +
+    labs(x = 'Baseline', y = 'Follow Up', title = NULL)
+ggsave(file.path(outdir, 'timepoints', 'press_t1_v_t2.pdf'), p, width = 4, height = 4)
+
+# waterfall plot
+p <- timeDat %>%
+    ggplot(aes(
+        x = fct_reorder(ID, waterfall),
+        y = waterfall, 
+        fill = factor(censor_MACLE2, labels = c('MACLE2', 'No MACLE2'))
+        )) +
+    geom_bar(stat = 'identity') +
+    theme_matt(14) +
+    labs(x = 'ID', y = 'Waterfall', title = NULL, fill = 'Censor') +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1), legend.position = 'top')
+ggsave(file.path(outdir, 'timepoints', 'press_waterfall.pdf'), p, width = 10, height = 6)
+
+
+#======================== Bleeding ========================#
+dir.create(file.path(outdir, 'bleeding'), showWarnings = F)
+# comp bleeding
+meta <- timepointDat
+write.csv(meta, file.path(outdir, 'bleeding', 'metadata.csv'))
+bleeding_comparisons <- grep('comp_bleeding', colnames(meta), value = TRUE)
+
+# make a table of the events by press
+bleeding_table_long <- meta %>%
+    dplyr::select(bleeding_comparisons, scores) %>%
+    pivot_longer(cols = c(bleeding_comparisons), names_to = 'event', values_to = 'censor') %>%
+    group_by(event, censor)
+
+summary_table <- bleeding_table_long %>%
+    summarise(
+        mean_score = mean(scores, na.rm = T),
+        sd_score = sd(scores, na.rm = T),
+        n = n(),
+        n_censored = sum(censor == 1, na.rm = T),
+        n_uncensored = sum(censor == 0, na.rm = T)
+        )
+write.csv(summary_table, file.path(outdir, 'bleeding', 'summary_table.csv'))
+
+statsTab <- bleeding_table_long %>%
+    group_by(event) %>%
+    do(
+        as.data.frame(stats_table(., 'censor', 'scores'))
+        )
+write.csv(statsTab, file.path(outdir, 'bleeding', 'stats_table.csv'))
+
+# barplot of the boxplot of censored and uncensored events by press
+p <- bleeding_table_long %>% drop_na() %>%
+    mutate(event = gsub('comp_bleeding__', '', event)) %>%
+    ggplot(aes(x = event, y = scores, fill = factor(censor))) +
+    geom_boxplot() +
+    geom_point(position=position_jitterdodge()) +
+    theme_matt(16) +
+    labs(x = NULL, y = 'PRESS Score', title = NULL, fill = 'Event') +
+    theme_bw(24) +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1), legend.position = 'top') +
+    scale_fill_manual(values = c('blue', 'red'), labels = c('No Bleed', 'Bleed'))
+ggplot2::ggsave(file.path(outdir, 'bleeding', 'event_boxplot.pdf'), p, width = 22, height = 8)
+
+

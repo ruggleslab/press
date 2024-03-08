@@ -1,5 +1,11 @@
 ##!/bin/bash
 
+# This script requires the use of:
+#   - config/*.json
+#   - press_model.sh
+#       - 01_datasets.R
+#       - 02_press_model.R
+
 # if the log exists wipe it
 if [ -f logs/reduce_press_$(date +"%Y%m%d").log ]; then
     rm logs/reduce_press_$(date +"%Y%m%d").log

@@ -1,0 +1,5 @@
+{
+    "normalization": "tmm",
+    "geneset": "output/feature_selection/log2foldchange/selected_genes.csv",
+    "outdir": "output/reduce_press/log2fc_tmm/"
+}

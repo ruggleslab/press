@@ -73,17 +73,40 @@ ggsave(file.path(outdir, 'basemean', 'basemean_plot.png'), basemean_plot, width 
 
 
 
+##### LOG2FOLD CHANGE SELECTION #####
+dir.create(file.path(outdir, 'log2foldchange'), showWarnings = F)
+log2foldchange_hist <- stats[press451, ] %>% 
+    pivot_longer(cols = c(hyperlog2foldchange, nothyperlog2foldchange), names_to = 'log2foldchange_type', values_to = 'log2foldchange') %>%
+    ggplot(aes(x = log2foldchange, fill = log2foldchange_type)) +
+    geom_histogram(alpha = 0.5, position = 'identity', bins = 20) +
+    theme_bw()
+colnames(stats)
 
+# load in the press genes
+pace_dge <- read.csv('data/PACE_hyper_v_hypo_deseqoutput.csv', header = TRUE, row.names = 1)
+colnames(pace_dge) <- paste0('pace_', colnames(pace_dge))
+duke_dge <- read.csv('data/duke_validation_run3/dge_analysis/comp_group1__hyper_v_nothyper_AGCONTROL_deseqout.csv', header = TRUE, row.names = 1)
+colnames(duke_dge) <- paste0('duke_', colnames(duke_dge))
+comb_dge <- cbind(pace_dge[press451, ], duke_dge[press451, ])
+same_dge <- comb_dge %>%
+    filter(
+        pace_log2FoldChange > 0 & duke_log2FoldChange > 0 |
+        pace_log2FoldChange < 0 & duke_log2FoldChange < 0
+        )
+write.csv(same_dge, file.path(outdir, 'log2foldchange', 'same_dge.csv'))
+write.csv(comb_dge, file.path(outdir, 'log2foldchange', 'comb_dge.csv'))
+write.csv(rownames(same_dge), file.path(outdir, 'log2foldchange', 'selected_genes.csv'), row.names = FALSE)
 
-
-
-
-
-
-
-
-
-
+p <- ggplot(same_dge, aes(x = pace_log2FoldChange, y = duke_log2FoldChange)) +
+    geom_point() +
+    geom_hline(yintercept = 0, linetype = 'dashed') +
+    geom_vline(xintercept = 0, linetype = 'dashed') +
+    geom_smooth(method = 'lm', se = TRUE) +
+    stat_cor(method = 'pearson', size = 6) +
+    labs(x = 'PACE log2FoldChange', y = 'DUKE log2FoldChange') +
+    geom_text_repel(aes(label = rownames(same_dge))) +
+    theme_matt()
+ggsave(file.path(outdir, 'log2foldchange', 'pace_duke_same_genes_lo2FC.png'), p, width = 6, height = 6)
 
 #======================== END ========================#
 writeLines(capture.output(sessionInfo()), file.path(outdir, "session.log"))
