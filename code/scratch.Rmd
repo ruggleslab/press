@@ -21,3 +21,12 @@ ComplexHeatmap::Heatmap(
     row_names_gp = grid::gpar(fontsize = 4)
     )
 ```
+
+
+# Look at the bleeding
+```{r, echo=FALSE}
+dat <- read.csv('data/metadata_9_20220422.csv', row.names=1)
+colnames(dat)
+
+with(dat, table(comp_bleeding__strmajorbleed_v_nobleed))
+```

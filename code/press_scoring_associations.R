@@ -45,14 +45,20 @@ metadata <- read.csv('data/pace/comb_updated2021.csv', stringsAsFactors = T, hea
 metadata <- metadata %>% 
     column_to_rownames('name_updated')
 
+# add on the bleeding metadata
+metadata_addon <- read.csv('data/metadata_9_20220422.csv', row.names = 1)
+rownames(metadata_addon) <- gsub('_', '', rownames(metadata_addon))
+columns_to_add <- grep('bleed', colnames(metadata_addon), value = T)
+metadata[rownames(metadata_addon), columns_to_add] <- metadata_addon[ , columns_to_add]
+
 # get the intersection of the two
 matched_samples <- intersect(rownames(press_scores), rownames(metadata))
 
 # add the scores to the metadata
-metadata <- cbind(metadata[matched_samples,], press_scores[matched_samples,])
+metadata_all <- cbind(metadata[matched_samples,], press_scores[matched_samples,])
 
 # add 3 and 4 tiles based on the scores to the metadata
-metadata <- metadata %>% 
+metadata <- metadata_all %>% 
     mutate(
         # add tiles
         tile_2 = as.factor(ntile(scores, 2)),
@@ -210,7 +216,6 @@ p <- epi_cor %>%
     # add vertical lines
     geom_vline(xintercept = 1:length(epi_variables), linetype = 'dashed', alpha = 0.2) +
     labs(x = 'Epi Variable', y = 'Correlation to \nPACE Press Score', title = 'Correlation of Epi Variables to PACE Press Score ALL SAMPLES')
-p
 # save the plot
 ggsave(file.path(outdir, 'pace_press_scoring_epi_correlation_all.pdf'), p, width = 10, height = 10)
 write.csv(epi_cor[, c('variable', 'scores', 'p')], file.path(outdir, 'pace_press_scoring_epi_correlation_all.csv'))
@@ -246,7 +251,6 @@ p <- epi_cor %>%
     # add vertical lines
     geom_vline(xintercept = 1:length(epi_variables), linetype = 'dashed', alpha = 0.2) +
     labs(x = 'Epi Variable', y = 'Correlation to \nPACE Press Score', title = 'Correlation of Epi Variables to PACE Press Score DERIVATION ONLY')
-p
 # save the plot
 ggsave(file.path(outdir, 'pace_press_scoring_epi_correlation_derivation.pdf'), p, width = 10, height = 10)
 write.csv(epi_cor[, c('variable', 'correlation', 'p')], file.path(outdir, 'pace_press_scoring_epi_correlation_derivation.csv'))
@@ -331,7 +335,7 @@ stats_df <- metadata[!rownames(metadata) %in% excludes, ]
 # add the high / low scores to the metadata
 stats_df <- stats_df %>%
     mutate(
-        high_low_scores = factor(ntile(scores, 2), labels = c('LOW', 'HIGH'))
+        high_low_scores = factor(ntile(preds, 2), labels = c('LOW', 'HIGH'))
         )
 table(stats_df$high_low_scores)
 
@@ -341,34 +345,10 @@ vars <- colnames(epi_variables)
 group <- 'high_low_scores'
 # make the tables
 all_sample_high_low_tab <- stats_table(stats_df, group, vars, printArgs = list(nonnorm = vars))
-deriv_sample_high_low_tab <- stats_table(
-    stats_df %>% 
-        filter(labels != 'NA') %>%
-        mutate(high_low_scores = factor(ntile(scores, 2), labels = c('LOW', 'HIGH'))),
-    group, vars, 
-    printArgs = list(nonnorm = vars)
-    )
-antiplt_therapy_high_low_tab <- stats_table(
-    stats_df %>% 
-        filter(antiplatelet_therapy == '1:Yes') %>%
-        mutate(high_low_scores = factor(ntile(scores, 2), labels = c('LOW', 'HIGH'))),
-    group, vars, 
-    printArgs = list(nonnorm = vars)
-    )
-no_antiplt_therapy_high_low_tab <- stats_table(
-    stats_df %>% 
-        filter(antiplatelet_therapy == '2:No') %>%
-        mutate(high_low_scores = factor(ntile(scores, 2), labels = c('LOW', 'HIGH'))),
-    group, vars, 
-    printArgs = list(nonnorm = vars)
-    )
-label_high_low_tab <- stats_table(
-    stats_df %>% 
-        filter(labels != 'NA') %>%
-        mutate(high_low_scores = factor(ntile(scores, 2), labels = c('LOW', 'HIGH'))),
-    'labels', 'scores', 
-    printArgs = list(nonnorm = 'scores')
-    )
+deriv_sample_high_low_tab <- stats_table(filter(stats_df, labels != 'NA'), group, vars, printArgs = list(nonnorm = vars))
+antiplt_therapy_high_low_tab <- stats_table(filter(stats_df, antiplatelet_therapy == '1:Yes'), group, vars, printArgs = list(nonnorm = vars))
+no_antiplt_therapy_high_low_tab <- stats_table(filter(stats_df, antiplatelet_therapy == '2:No'), group, vars, printArgs = list(nonnorm = vars))
+label_high_low_tab <- stats_table(filter(stats_df, labels != 'NA'), 'labels', 'scores', printArgs = list(nonnorm = 'scores'))
 
 # save the tables
 write.csv(all_sample_high_low_tab, file.path(outdir, 'pace_press_scoring_high_low_all_samples.csv'))
@@ -383,11 +363,11 @@ table(stats_df$labels)
 #======================== EVENTS BY PRESS ========================#
 dir.create(file.path(outdir, 'events_by_press'), showWarnings = F)
 # So now let's look at the events by PRESS
-censors <- grep('censor|bleed', colnames(metadata), value = T)
+censors <- grep('censor', colnames(metadata), value = T)
 
 # make a table of the events by press
 events_table_long <- metadata %>%
-    dplyr::select(censors, scores, preds) %>%
+    dplyr::select(all_of(censors), scores, preds) %>%
     pivot_longer(cols = c(censors), names_to = 'event', values_to = 'censor') %>%
     group_by(event, censor)
 summary_table <- events_table_long %>%
@@ -417,10 +397,24 @@ p <- events_table_long %>%
     scale_fill_manual(values = c('blue', 'red'), labels = c('No Event', 'Event'))
 ggsave(file.path(outdir, 'events_by_press', 'event_boxplot.pdf'), p, width = 22, height = 8)
 
+# So now we should make KM curves for the high_low_scores of all censors
+colnames(metadata_all) <- gsub('tte_', 'time_to_', colnames(metadata_all))
+censors <- grep('censor_', colnames(metadata_all), value = T)
+kmDat <- metadata_all %>%
+    mutate(high_low_scores = factor(ntile(scores, 2), labels = c('LOW', 'HIGH')))
+group <- 'high_low_scores'
+survOut <- survival_analysis(kmDat, group, censors, file.path(outdir, 'events_by_press', 'km_curves'))
+with(kmDat, table(high_low_scores, censor_MACLE2))
+survOut$HR_df
+# okay dont love that -- this is different than the paper
+colnames(kmDat)
+coxph_out <- coxph(Surv(time_to_MACLE2, censor_MACLE2) ~ preds + age + sex1 + race1 + ethnicity1 + smoking1, data = kmDat)
+summary(coxph_out)
 
 #======================== Timepoint 2 ========================#
 dir.create(file.path(outdir, 'timepoints'), showWarnings = F)
 # PRESS Scoring at Timepoint 2
+genes <- pull(read.csv('data/press451_genes.csv'))
 pace_path <- '../../datasets/pace/platelet_rna_filtered/dds.rds'
 pace_dds <- readRDS(pace_path)
 pace_counts <- normalize_counts(pace_dds, method = 'mor', log = T) %>% 
@@ -435,14 +429,15 @@ cmd <- glue::glue(
 )
 system(cmd)
 
-# get the intersect of the press scores and the timepointDat
-samples <- intersect(rownames(press_scores), rownames(timepointDat))
-timepointDat[samples, c('preds', 'scores')] <- press_scores[samples, c('preds', 'scores')]
 
 # load the scores
 press_scores_timepoint2 <- read.csv(file.path(outdir, 'timepoints', 'pace_press_scores_timepoint2.csv'), row.names = 1)
 timepoint_metadata <- as.data.frame(colData(pace_dds))
 timepointDat <- cbind(timepoint_metadata, press_scores_timepoint2)
+
+# get the intersect of the press scores and the timepointDat
+samples <- intersect(rownames(press_scores), rownames(timepointDat))
+timepointDat[samples, c('preds', 'scores')] <- press_scores[samples, c('preds', 'scores')]
 
 # only keep the values with duplicates in ID
 timepointDat$ID <- stringr::str_replace_all(rownames(timepointDat), '\\.3', '')
@@ -476,11 +471,10 @@ p <- timeDat %>%
     theme(axis.text.x = element_text(angle = 90, hjust = 1), legend.position = 'top')
 ggsave(file.path(outdir, 'timepoints', 'press_waterfall.pdf'), p, width = 10, height = 6)
 
-
 #======================== Bleeding ========================#
 dir.create(file.path(outdir, 'bleeding'), showWarnings = F)
 # comp bleeding
-meta <- timepointDat
+meta <- metadata
 write.csv(meta, file.path(outdir, 'bleeding', 'metadata.csv'))
 bleeding_comparisons <- grep('comp_bleeding', colnames(meta), value = TRUE)
 
@@ -516,8 +510,9 @@ p <- bleeding_table_long %>% drop_na() %>%
     theme_matt(16) +
     labs(x = NULL, y = 'PRESS Score', title = NULL, fill = 'Event') +
     theme_bw(24) +
-    theme(axis.text.x = element_text(angle = 90, hjust = 1), legend.position = 'top') +
-    scale_fill_manual(values = c('blue', 'red'), labels = c('No Bleed', 'Bleed'))
-ggplot2::ggsave(file.path(outdir, 'bleeding', 'event_boxplot.pdf'), p, width = 22, height = 8)
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 12), legend.position = 'top') +
+    scale_fill_manual(values = c('blue', 'red'), labels = c('No Bleed', 'Bleed')) +
+    stat_compare_means(method = 't.test')
+ggplot2::ggsave(file.path(outdir, 'bleeding', 'event_boxplot.pdf'), p, width = 12, height = 8)
 
 

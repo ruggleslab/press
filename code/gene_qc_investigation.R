@@ -22,10 +22,13 @@ library(lintr) #nolint
 library(httpgd) #nolint
 library(languageserver) #nolint
 library(tidyverse)
+library(ggpubr)
+library(ggrepel)
 
 # LOAD FUNCTIONS
 # space reserved for sourcing in functions
 source('https://raw.githubusercontent.com/mattmuller0/Rtools/main/general_functions.R')
+source('https://raw.githubusercontent.com/mattmuller0/Rtools/main/plotting_functions.R')
 
 #======================== DATA ========================#
 # load in the press genes
@@ -66,7 +69,7 @@ p <- ggplot(missing_genes_lo2FC, aes(x = pace, y = duke)) +
   geom_hline(yintercept = 0, linetype = 'dashed') +
   geom_vline(xintercept = 0, linetype = 'dashed') +
   geom_smooth(method = 'lm', se = TRUE) +
-  stat_cor(method = 'pearson', size = 6) +
+  stat_cor(method = 'spearman', size = 6) +
   labs(x = 'PACE log2FoldChange', y = 'DUKE log2FoldChange') +
   geom_text_repel(aes(label = rownames(missing_genes_lo2FC))) +
   theme_matt()
@@ -84,7 +87,7 @@ p <- ggplot(chord_present_genes_lo2FC, aes(x = pace, y = duke)) +
   geom_hline(yintercept = 0, linetype = 'dashed') +
   geom_vline(xintercept = 0, linetype = 'dashed') +
   geom_smooth(method = 'lm', se = TRUE) +
-  stat_cor(method = 'pearson', size = 6) +
+  stat_cor(method = 'spearman', size = 6) +
   labs(x = 'PACE log2FoldChange', y = 'DUKE log2FoldChange') +
   geom_text_repel(aes(label = rownames(chord_present_genes_lo2FC))) +
   theme_matt()
@@ -106,7 +109,7 @@ p <- ggplot(missing_genes_base_mean, aes(x = pace, y = duke)) +
   geom_hline(yintercept = 0, linetype = 'dashed') +
   geom_vline(xintercept = 0, linetype = 'dashed') +
   geom_smooth(method = 'lm', se = TRUE) +
-  stat_cor(method = 'pearson', size = 6) +
+  stat_cor(method = 'spearman', size = 6) +
   labs(x = 'PACE baseMean', y = 'DUKE baseMean') +
   geom_text_repel(aes(label = rownames(missing_genes_base_mean))) +
   theme_matt()
@@ -126,11 +129,91 @@ p <- ggplot(present_genes_base_mean, aes(x = pace, y = duke)) +
   geom_hline(yintercept = 0, linetype = 'dashed') +
   geom_vline(xintercept = 0, linetype = 'dashed') +
   geom_smooth(method = 'lm', se = TRUE) +
-  stat_cor(method = 'pearson', size = 6) +
+  stat_cor(method = 'spearman', size = 6) +
   labs(x = 'PACE baseMean', y = 'DUKE baseMean') +
   geom_text_repel(aes(label = rownames(present_genes_base_mean))) +
   theme_matt()
 ggsave(file.path(outdir, 'pace_duke_present_genes_baseMean.png'), p, width = 6, height = 6)
+
+
+#======================== CHORD Timepoint Analysis ========================#
+dir.create(file.path(outdir, 'chord_timepoint_analysis'), showWarnings = F)
+# So would be helpful to look at the timepoints for chord
+chord_t1 <- chord_scores
+chord_dds <- readRDS('data/chord/chord_preprocessing/dds.rds')
+gene_convert <- read.csv('data/chord/gene_convert.csv', row.names = 1)
+
+chord_dds <- DESeq2::estimateSizeFactors(chord_dds)
+chord_t2_dds <- chord_dds[, chord_dds$Study_Timepoint == 2]
+rownames(chord_t2_dds) <- gene_convert[rownames(chord_t2_dds), 'gene_name']
+chord_counts_t2 <- normalize_counts(chord_t2_dds, 'mor', log2 = T) %>%
+  add_missing_rows(press) %>%
+  .[press,] %>%
+  t()
+write.csv(chord_counts_t2, file.path(outdir, 'chord_timepoint_analysis', 'chord_counts_t2.csv'))
+
+inpath <- 'output/gene_qc_investigation/chord_timepoint_analysis/chord_counts_t2.csv'
+outpath <- 'output/gene_qc_investigation/chord_timepoint_analysis/chord_t2_press_scores.csv'
+cmd <- glue('python3 code/run_press.py --data {inpath} --out {outpath}')
+system(cmd)
+
+chord_t2 <- read.csv(outpath, row.names = 1)
+
+rownames(chord_t2) <- gsub('\\.2', '', rownames(chord_t2))
+sizeFact_t1 <- chord_dds$sizeFactor[chord_dds$Study_Timepoint == 1]
+sizeFact_t2 <- chord_dds$sizeFactor[chord_dds$Study_Timepoint == 2]
+chord_t1$sizeFact_t1 <- sizeFact_t1
+chord_t2$sizeFact_t2 <- sizeFact_t2
+timepointDat <- cbind(chord_t1, t2_scores = chord_t2$scores) %>%
+  rename('t1_scores' = 'press_score')
+
+colnames(timepointDat)
+tPlot <- ggplot(timepointDat, aes(x = t1_scores, y = t2_scores)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = TRUE) +
+  stat_cor(method = 'spearman', size = 6) +
+  ggpmisc::stat_poly_eq(size = 6, vjust = 3.5) +
+  labs(x = 'Timepoint 1 Press Score', y = 'Timepoint 2 Press Score') +
+  geom_text_repel(aes(label = rownames(timepointDat))) +
+  theme_matt()
+ggsave(file.path(outdir, 'chord_timepoint_analysis', 'chord_timepoint_libsize.png'), tPlot, width = 6, height = 6)
+
+tPlot <- ggplot(timepointDat, aes(x = t1_scores, y = t2_scores, color = factor(press))) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = TRUE) +
+  ggpmisc::stat_poly_eq(size = 6, vjust = 3.5) +
+  stat_cor(method = 'spearman', size = 6) +
+  labs(x = 'Timepoint 1 Press Score', y = 'Timepoint 2 Press Score') +
+  geom_text_repel(aes(label = rownames(timepointDat))) +
+  theme_matt()
+ggsave(file.path(outdir, 'chord_timepoint_analysis', 'chord_timepoint_analysis.png'), tPlot, width = 6, height = 6)
+
+t1Lib <- ggplot(timepointDat, aes(x = libSize_t1, y = t1_scores)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = TRUE) +
+  stat_cor(method = 'spearman', size = 6) +
+  labs(x = 'Timepoint 1 Size Factor', y = 'Timepoint 1 Press Score') +
+  geom_text_repel(aes(label = rownames(timepointDat))) +
+  theme_matt()
+ggsave(file.path(outdir, 'chord_timepoint_analysis', 'chord_timepoint_t1_libsize.png'), t1Lib, width = 6, height = 6)
+
+t2Lib <- ggplot(timepointDat, aes(x = sizeFact_t2, y = t2_scores)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = TRUE) +
+  stat_cor(method = 'spearman', size = 6) +
+  labs(x = 'Timepoint 2 Size Factor', y = 'Timepoint 2 Press Score') +
+  geom_text_repel(aes(label = rownames(timepointDat))) +
+  theme_matt()
+ggsave(file.path(outdir, 'chord_timepoint_analysis', 'chord_timepoint_t2_libsize.png'), t2Lib, width = 6, height = 6)
+
+sizeFacts <- ggplot(timepointDat, aes(x = sizeFact_t2, y = sizeFact_t1)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = TRUE) +
+  stat_cor(method = 'spearman', size = 6) +
+  labs(x = 'Timepoint 2 Size Factor', y = 'Timepoint 1 Size Factor') +
+  geom_text_repel(aes(label = rownames(timepointDat))) +
+  theme_matt()
+ggsave(file.path(outdir, 'chord_timepoint_analysis', 'chord_timepoint_libsize.png'), sizeFacts, width = 6, height = 6)
 
 
 

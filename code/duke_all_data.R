@@ -101,7 +101,7 @@ meta %<>% mutate(
 buckets <- meta %>% 
     filter(characteristic__visit_number == 1) %>% 
     dplyr::select(scores, characteristic__subject_id) %>%
-    mutate(press_bucket = ntile(scores, 4))
+    mutate(press_bucket = ntile(scores, 2))
 # histogram of the buckets
 histogram <- ggplot(buckets, aes(x = scores, fill = factor(press_bucket))) +
     geom_histogram() +
@@ -181,20 +181,60 @@ drug_label_plot_paired_hyper <- ggplot(
 ggsave(file.path(outdir, 'drug_label_plot_paired_hyper.png'), drug_label_plot_paired_hyper, width = 10, height = 5)
 
 drug_label_plot_paired_bucket <- ggplot(
-    meta %>% filter(press_bucket == '4' & characteristic__subject_id %in% ids),
+    meta %>% filter(press_bucket == '2' & characteristic__subject_id %in% ids),
     aes(x = characteristic__treatment_drug_label, y = scores, fill = characteristic__treatment_drug_label)) +
     geom_boxplot() +
     geom_line(aes(group = characteristic__subject_id), alpha = 0.5) +
     theme_bw(20) +
     labs(x = 'Group', y = 'PRESS Score', title = NULL) +
     theme(legend.position = 'none') +
-    stat_compare_means(
-        method = 't.test',
-        comparisons = pairwise_combos(as.character(meta$characteristic__treatment_drug_label)),
-        size = 6,
-        paired = TRUE
-        )
+    stat_compare_means(method = 't.test', size = 6, paired = TRUE, comparisons = pairwise_combos(as.character(meta$characteristic__treatment_drug_label)))
 ggsave(file.path(outdir, 'drug_label_plot_paired_bucket.png'), drug_label_plot_paired_bucket, width = 10, height = 5)
+
+drug_label_plot_paired_bucket_81asa <- ggplot(
+    meta %>% filter(press_bucket == '2' & characteristic__subject_id %in% ids & characteristic__treatment_drug_label %in% c('81 mg Aspirin', 'Baseline')),
+    aes(x = characteristic__treatment_drug_label, y = scores, fill = characteristic__treatment_drug_label)) +
+    geom_boxplot() +
+    geom_line(aes(group = characteristic__subject_id), alpha = 0.5) +
+    theme_bw(20) +
+    labs(x = 'Group', y = 'PRESS Score', title = NULL) +
+    theme(legend.position = 'none') +
+    stat_compare_means(method = 't.test', size = 6, paired = TRUE)
+ggsave(file.path(outdir, 'drug_label_plot_paired_bucket_81asa.png'), drug_label_plot_paired_bucket_81asa, width = 5, height = 5)
+
+drug_label_plot_paired_bucket_325asa <- ggplot(
+    meta %>% filter(press_bucket == '2' & characteristic__subject_id %in% ids & characteristic__treatment_drug_label %in% c('325 mg Aspirin', 'Baseline')),
+    aes(x = characteristic__treatment_drug_label, y = scores, fill = characteristic__treatment_drug_label)) +
+    geom_boxplot() +
+    geom_line(aes(group = characteristic__subject_id), alpha = 0.5) +
+    theme_bw(20) +
+    labs(x = 'Group', y = 'PRESS Score', title = NULL) +
+    theme(legend.position = 'none') +
+    stat_compare_means(method = 't.test', size = 6, paired = TRUE)
+ggsave(file.path(outdir, 'drug_label_plot_paired_bucket_325asa.png'), drug_label_plot_paired_bucket_325asa, width = 5, height = 5)
+
+drug_label_plot_paired_bucket_180tic <- ggplot(
+    meta %>% filter(press_bucket == '2' & characteristic__subject_id %in% ids & characteristic__treatment_drug_label %in% c('180 mg Ticagrelor', 'Baseline')),
+    aes(x = characteristic__treatment_drug_label, y = scores, fill = characteristic__treatment_drug_label)) +
+    geom_boxplot() +
+    geom_line(aes(group = characteristic__subject_id), alpha = 0.5) +
+    theme_bw(20) +
+    labs(x = 'Group', y = 'PRESS Score', title = NULL) +
+    theme(legend.position = 'none') +
+    stat_compare_means(method = 't.test', size = 6, paired = TRUE)
+ggsave(file.path(outdir, 'drug_label_plot_paired_bucket_180tic.png'), drug_label_plot_paired_bucket_180tic, width = 5, height = 5)
+with(meta %>% filter(cohort == 'group1'), table(press_bucket, hyper_baseline))
+
+drug_label_plot_paired_bucket_washout <- ggplot(
+    meta %>% filter(press_bucket == '2' & characteristic__subject_id %in% ids & characteristic__treatment_drug_label %in% c('Washout', '180 mg Ticagrelor')),
+    aes(x = characteristic__treatment_drug_label, y = scores, fill = characteristic__treatment_drug_label)) +
+    geom_boxplot() +
+    geom_line(aes(group = characteristic__subject_id), alpha = 0.5) +
+    theme_bw(20) +
+    labs(x = 'Group', y = 'PRESS Score', title = NULL) +
+    theme(legend.position = 'none') +
+    stat_compare_means(method = 't.test', size = 6, paired = TRUE)
+ggsave(file.path(outdir, 'drug_label_plot_paired_bucket_washout.png'), drug_label_plot_paired_bucket_washout, width = 5, height = 5)
 
 visit_num_plot <- ggplot(meta, aes(x = characteristic__visit_number, y = scores, fill = characteristic__treatment_drug_label)) +
     geom_boxplot() +
@@ -338,6 +378,50 @@ press_g1_g2_plot <- ggplot(press_stability, aes(x = group1, y = group2)) +
 press_g1_g2_plot
 ggsave(file.path(outdir, 'press_g1_g2_plot.png'), press_g1_g2_plot, width = 8, height = 6)
 
+#======================== PRESS Change from Therapy ========================#
+dTx_data <- meta %>% 
+    pivot_wider(
+        id_cols = c(hyper_baseline, characteristic__subject_id, press_bucket), 
+        names_from = characteristic__treatment_drug_label, 
+        values_from = scores
+        ) %>%
+    mutate(
+        `81 mg Aspirin - Baseline` = `81 mg Aspirin` - Baseline,
+        `325 mg Aspirin - Baseline` = `325 mg Aspirin` - Baseline,
+        `180 mg Ticagrelor - Baseline` = `180 mg Ticagrelor` - Baseline,
+        `Washout - Baseline` = Washout - Baseline
+    ) %>%
+    pivot_longer(
+        cols = c(`81 mg Aspirin - Baseline`, `325 mg Aspirin - Baseline`, `180 mg Ticagrelor - Baseline`, `Washout - Baseline`),
+        names_to = 'therapy',
+        values_to = 'change'
+    )
+
+dTx_plot <- ggplot(dTx_data, aes(x = change, y = therapy)) +
+    geom_boxplot() +
+    theme_bw(24) +
+    geom_vline(xintercept = 0, linetype = 'dashed') +
+    theme(legend.position = 'bottom') +
+    labs(x = 'Change in PRESS Score', y = NULL, title = 'PRESS Score Change by Group')
+ggsave(file.path(outdir, 'dTx_plot.png'), dTx_plot, width = 8, height = 6)
+
+dTx_hyper_plot <- dTx_data %>% 
+    ggplot(aes(x = change, y = therapy, color = hyper_baseline)) +
+    geom_boxplot() +
+    theme_bw(24) +
+    geom_vline(xintercept = 0, linetype = 'dashed') +
+    theme(legend.position = 'bottom') +
+    labs(x = 'Change in PRESS Score', y = NULL, title = 'PRESS Score Change by Group')
+ggsave(file.path(outdir, 'dTx_hyper_plot.png'), dTx_hyper_plot, width = 8, height = 6)
+
+dTx_bucket_plot <- dTx_data %>% 
+    ggplot(aes(x = change, y = therapy, color = factor(press_bucket))) +
+    geom_boxplot() +
+    theme_bw(24) +
+    geom_vline(xintercept = 0, linetype = 'dashed') +
+    theme(legend.position = 'bottom') +
+    labs(x = 'Change in PRESS Score', y = NULL, title = 'PRESS Score Change by Group', color = 'PRESS Bucket')
+ggsave(file.path(outdir, 'dTx_bucket_plot.png'), dTx_bucket_plot, width = 8, height = 6)
 
 #======================== END ========================#
 writeLines(capture.output(sessionInfo()), file.path(outdir, "session.log"))

@@ -76,6 +76,13 @@ def test_model(X, y, outdir):
     sns.boxplot(x='True', y='Probabilities', data=df)
     plt.savefig(outdir+'probabilities_boxplot.png')
     df.to_csv(outdir+'predictions.csv', index=False)
+    
+    # make a summary of the groups
+    summary = pd.DataFrame({
+        'True': df['True'].value_counts(),
+        'Predicted': df['Predicted'].value_counts(),
+    })
+    summary.to_csv(outdir+'summary.csv')
 
 #======================== CODE ========================#
 # start off by running the datasets.R file
