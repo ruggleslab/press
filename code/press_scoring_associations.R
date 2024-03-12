@@ -411,6 +411,45 @@ colnames(kmDat)
 coxph_out <- coxph(Surv(time_to_MACLE2, censor_MACLE2) ~ preds + age + sex1 + race1 + ethnicity1 + smoking1, data = kmDat)
 summary(coxph_out)
 
+#======================== Yuhe Survival Code ========================#
+# So my code is not working for the survival analysis
+# I'm going to just copy in Yuhe's code as I want to
+# repeat what she's done
+df = metadata_all
+df$score_cat = ifelse(df$scores<=median(df$scores),'<=M','>M')
+df$composite= ifelse(df$censor_death==1 |df$censor_MI==1| df$censor_stroke==1|df$censor_ampu==1, 1, 0)
+vars = c('time_to_death','time_to_MI','time_to_stroke','time_to_ampu')
+df$min_time = apply(df[,c(vars)], 1, FUN = min, na.rm = TRUE) 
+df$max_time = apply(df[,c(vars)], 1, FUN = max, na.rm = TRUE) 
+df$time_to_composite = ifelse(df$composite==1,df$min_time, df$max_time)
+
+
+m = coxph(Surv(time_to_MACLE, censor_MACLE)~score_cat+age_surgery+sex1+ethnicity1+bmi+diabetes1+carotid_artery_disease1+prior_stroke_mini_stroke1+cli, data=df)
+m = coxph(Surv(time_to_MACLE2, censor_MACLE2)~score_cat+age_surgery+sex1+ethnicity1+bmi+diabetes1+carotid_artery_disease1+prior_stroke_mini_stroke1+cli, data=df)
+m = coxph(Surv(time_to_composite, composite)~score_cat+age_surgery+sex1+ethnicity1+bmi+diabetes1+carotid_artery_disease1+prior_stroke_mini_stroke1+cli, data=df)
+ShowRegTable(m)
+
+m = coxph(Surv(time_to_MACLE, censor_MACLE)~score_cat, data=df)
+m = coxph(Surv(time_to_MACLE2, censor_MACLE2)~score_cat, data=df)
+m = coxph(Surv(time_to_composite, composite)~score_cat, data=df)
+ShowRegTable(m)
+
+# m = coxph(Surv(time_to_composite, composite)~score_cat2, data=df)
+# ShowRegTable(m)
+# tiff('KM2.tiff', res = 200, height = 1000, width = 1200)
+# pdf('KM1.pdf')
+fit <- survfit(Surv(time_to_composite, composite)~score_cat, data=df)
+library(survminer)
+ggsurvplot(fit, data = df,
+           pval = T, pval.coord = c(0, 0.60),
+           risk.table = T,legend.title="", survscale = 'percent',
+           risk.table.height = 0.20,censor = F, legend.labs=c('Score<=Median','Score>Median'),
+           #legend.labs = c('Tertile 1','Tertile 2','Tertile 3'),
+           xlab = c('Time in days'),ylab = c('Cumulative Disease Rate'), fun = 'event', palette = 'lancet',
+           break.time.by=365,
+           tables.theme = theme_cleantable(),tables.y.text = FALSE)#+guides(color=guide_legend(nrow=2,byrow=TRUE))
+# dev.off()
+
 #======================== Timepoint 2 ========================#
 dir.create(file.path(outdir, 'timepoints'), showWarnings = F)
 # PRESS Scoring at Timepoint 2

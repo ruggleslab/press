@@ -176,7 +176,7 @@ tPlot <- ggplot(timepointDat, aes(x = t1_scores, y = t2_scores)) +
   labs(x = 'Timepoint 1 Press Score', y = 'Timepoint 2 Press Score') +
   geom_text_repel(aes(label = rownames(timepointDat))) +
   theme_matt()
-ggsave(file.path(outdir, 'chord_timepoint_analysis', 'chord_timepoint_libsize.png'), tPlot, width = 6, height = 6)
+ggsave(file.path(outdir, 'chord_timepoint_analysis', 'chord_timepoint_timepoints.png'), tPlot, width = 6, height = 6)
 
 tPlot <- ggplot(timepointDat, aes(x = t1_scores, y = t2_scores, color = factor(press))) +
   geom_point() +
@@ -185,7 +185,8 @@ tPlot <- ggplot(timepointDat, aes(x = t1_scores, y = t2_scores, color = factor(p
   stat_cor(method = 'spearman', size = 6) +
   labs(x = 'Timepoint 1 Press Score', y = 'Timepoint 2 Press Score') +
   geom_text_repel(aes(label = rownames(timepointDat))) +
-  theme_matt()
+  theme_matt() +
+  theme(legend.position = 'top')
 ggsave(file.path(outdir, 'chord_timepoint_analysis', 'chord_timepoint_analysis.png'), tPlot, width = 6, height = 6)
 
 t1Lib <- ggplot(timepointDat, aes(x = libSize_t1, y = t1_scores)) +
