@@ -1,0 +1,9 @@
+"","X","validation_run","geneset","NES","pvalue","dataset","absNES","signed_pstat","pstat"
+"1","pace_pacethr.custom_mgc_hyper_up","pace_pacethr","PRESS UP",1.76008321320777,9.40994086115192e-05,"Atherosclerosis",1.76008321320777,4.02641310598359,4.02641310598359
+"2","pace_pacethr.custom_mgc_hyper_down","pace_pacethr","PRESS DOWN",-3.54125107793581,1e-10,"Atherosclerosis",3.54125107793581,-10,10
+"3","covid_covidcontrol.custom_mgc_hyper_up","covid_covidcontrol","PRESS UP",2.11366135023458,8.8281902185027e-08,"COVID",2.11366135023458,7.05412831778994,7.05412831778994
+"4","covid_covidcontrol.custom_mgc_hyper_down","covid_covidcontrol","PRESS DOWN",-2.29620856048206,1e-10,"COVID",2.29620856048206,-10,10
+"5","sle_slecontrol.custom_mgc_hyper_up","sle_slecontrol","PRESS UP",2.3574761403771,2.08623917432147e-10,"Systemic Lupus Erythematosus",2.3574761403771,9.68063590389911,9.68063590389911
+"6","sle_slecontrol.custom_mgc_hyper_down","sle_slecontrol","PRESS DOWN",-2.67915172902997,1e-10,"Systemic Lupus Erythematosus",2.67915172902997,-10,10
+"7","bongiovanni_rpmp.custom_mgc_hyper_up","bongiovanni_rpmp","PRESS UP",2.26906461234223,0.000272022294606767,"Reticulated Platelets",2.26906461234223,3.56539550027498,3.56539550027498
+"8","bongiovanni_rpmp.custom_mgc_hyper_down","bongiovanni_rpmp","PRESS DOWN",-1.97889638157892,0.00354167732759767,"Reticulated Platelets",1.97889638157892,-2.45079100870982,2.45079100870982

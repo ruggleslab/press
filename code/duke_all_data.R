@@ -426,3 +426,12 @@ ggsave(file.path(outdir, 'dTx_bucket_plot.png'), dTx_bucket_plot, width = 8, hei
 #======================== END ========================#
 writeLines(capture.output(sessionInfo()), file.path(outdir, "session.log"))
 save.image(file.path(outdir, "image.RData"))
+
+
+
+
+#======================== Scratch Code ========================#
+ggplot(meta %>% drop_na(long_cohort), aes(x = long_cohort, y = scores)) +
+    geom_boxplot() +
+    stat_compare_means(method = 't.test') +
+    lims(y = c(-2, 3))
