@@ -5,6 +5,7 @@
 #   - press_model.sh
 #       - 01_datasets.R
 #       - 02_press_model.R
+#       - 03_press_postprocessing.R
 
 # if the log exists wipe it
 if [ -f logs/reduce_press_$(date +"%Y%m%d").log ]; then

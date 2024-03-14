@@ -27,6 +27,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from joblib import dump, load
+import plotnine as p9
 # Modeling libraries
 from sklearn import base
 from sklearn import preprocessing
@@ -77,6 +78,14 @@ def test_model(X, y, outdir):
     plt.savefig(outdir+'probabilities_boxplot.png')
     df.to_csv(outdir+'predictions.csv', index=False)
     
+    # make a boxplot using plotnine
+    p = (
+        p9.ggplot(df, p9.aes(x='True', y='Probabilities', fill='Type')) +
+            p9.geom_boxplot() +
+            p9.theme_classic()
+        )
+    p.save(outdir+'probabilities_boxplot.png')
+    
     # make a summary of the groups
     summary = pd.DataFrame({
         'True': df['True'].value_counts(),
@@ -122,7 +131,7 @@ parameters = {
     'rf0__random_state': seeds,
     'extraTrees0__n_estimators': [10, 100, 200],
 }
-parameters = {} # this takes too long let's just use the defaults
+# parameters = {} # this takes too long let's just use the defaults
 
 # make a voting classifier made a bunch of RFs
 model = VotingClassifier(
@@ -143,7 +152,7 @@ model = VotingClassifier(
 cv = model_selection.GridSearchCV(
     model, parameters,
     n_jobs=-1,
-    scoring="roc_auc",
+    scoring="balanced_accuracy",
     )
 cv.fit(X_pace, y_pace)
 cv_results = cv.cv_results_

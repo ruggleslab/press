@@ -7,9 +7,19 @@ publication
 output
 logs
 notebooks/archive
+shared
 */archive
 */.ipynb_checkpoints
 */.ipynb_checkpoints/*
 
 # pycache
 **/__pycache__
+
+# file types
+*.pdf
+*.docx
+*.doc
+*.xls
+*.xlsx
+*.ppt
+*.pptx

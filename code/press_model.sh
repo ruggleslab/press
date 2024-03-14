@@ -13,7 +13,6 @@ json=$1
 echo "Parameters"
 echo "---------------------------------"
 echo "json: ${json}"
-echo $json
 
 echo " "
 echo " "
@@ -35,4 +34,14 @@ echo "Running press_model.py..."
 echo "---------------------------------"
 python code/02_press_model.py --json ${json}
 
-echo "Script execution completed."
+echo " "
+echo " "
+echo " "
+
+# # Run press postprocessing.R
+# echo "Running press_postprocessing.R..."
+# echo "---------------------------------"
+# Rscript code/03_press_postprocessing.R --json ${json}
+
+
+# echo "Script execution completed."
