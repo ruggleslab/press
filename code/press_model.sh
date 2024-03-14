@@ -23,7 +23,7 @@ echo " "
 # Run prep_datasets.sh
 echo "Running prep_datasets.R..."
 echo "---------------------------------"
-Rscript code/01_prep_datasets.R --json ${json}
+Rscript workflow/steps/press/01_prep_datasets.R --json ${json}
 
 echo " "
 echo " "
@@ -32,7 +32,7 @@ echo " "
 # Run press_model.sh
 echo "Running press_model.py..."
 echo "---------------------------------"
-python code/02_press_model.py --json ${json}
+python workflow/steps/press/02_press_model.py --json ${json}
 
 echo " "
 echo " "
@@ -41,7 +41,7 @@ echo " "
 # # Run press postprocessing.R
 # echo "Running press_postprocessing.R..."
 # echo "---------------------------------"
-# Rscript code/03_press_postprocessing.R --json ${json}
+# Rscript workflow/steps/press/03_press_postprocessing.R --json ${json}
 
 
 # echo "Script execution completed."

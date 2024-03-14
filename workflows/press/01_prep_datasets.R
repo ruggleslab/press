@@ -7,6 +7,11 @@
 # Date: 2024-02-25
 # Script Name: prep_datasets
 
+
+#' The JSON object contains three key-value pairs:
+#' * "normalization": This key corresponds to the method used for normalization. In this case, "mor" is used.
+#' * "geneset": This key corresponds to the path of the selected features file. In this case, the path is "output/feature_selection/rfe/logreg/selected_features.csv".
+#' * "outdir": This key corresponds to the output directory where the results will be stored. In this case, the output directory is "output/reduce_press/rfeLOGREG_mor/".
 # Load in the json from argparse
 parser <- argparse::ArgumentParser()
 parser$add_argument('--json', help = 'path to the config file')
@@ -28,13 +33,26 @@ library(readxl)
 # space reserved for sourcing in functions
 source('https://raw.githubusercontent.com/mattmuller0/Rtools/main/general_functions.R')
 
-# function to prep the data for learning
+#' Prepares the data for learning.
+#'
+#' This function takes in count data, metadata, an output directory, and a set of parameters.
+#' It normalizes the count data, selects a gene set, and prepares the data for DESeq2.
+#'
+#' @param counts A data frame of count data.
+#' @param meta A data frame of metadata.
+#' @param outdir A string specifying the output directory.
+#' @param params A list of parameters. This should be a list that includes the following elements:
+#'   * normalization: A string specifying the normalization method. For example, "mor".
+#'   * geneset: A string specifying the path to the selected features file. For example, "output/feature_selection/rfe/logreg/selected_features.csv".
+#'   * outdir: A string specifying the output directory. For example, "output/reduce_press/rfeLOGREG_mor/".
+#' @return list A list containing the normalized counts and the metadata.
 prep_data <- function(
     counts, 
     meta, 
     outdir,
     params = params
     ) {
+    # function body
     dir.create(outdir, showWarnings = F, recursive = T)
     # get the intersection of the counts and the meta
     common <- intersect(colnames(counts), rownames(meta))

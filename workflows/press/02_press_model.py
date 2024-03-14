@@ -8,6 +8,10 @@
 # Script Name: press_model
 
 #======================== SETUP ========================#
+#' The JSON object contains three key-value pairs:
+#' * "normalization": This key corresponds to the method used for normalization. In this case, "mor" is used.
+#' * "geneset": This key corresponds to the path of the selected features file. In this case, the path is "output/feature_selection/rfe/logreg/selected_features.csv".
+#' * "outdir": This key corresponds to the output directory where the results will be stored. In this case, the output directory is "output/reduce_press/rfeLOGREG_mor/".
 import argparse
 args = argparse.ArgumentParser()
 args.add_argument('--json', type=str, help='Path to the JSON input file')
@@ -52,6 +56,17 @@ if not os.path.exists(outdir):
 utils.set_random_seed(420)
 utils.hide_warnings()
 
+def get_data(indir, dataset):
+    # check if the counts and labels exist
+    if not os.path.exists(f'{indir}/{dataset}/normalized_counts.csv'):
+        raise ValueError(f'No normalized counts for {dataset}')
+    if not os.path.exists(f'{indir}/{dataset}/label.csv'):
+        raise ValueError(f'No label for {dataset}')
+    
+    X = pd.read_csv(f'{indir}/{dataset}/normalized_counts.csv', index_col=0, header=0).T
+    y = pd.read_csv(f'{indir}/{dataset}/label.csv')['hypercohort']
+    return X, y
+
 def test_model(X, y, outdir):
     os.makedirs(outdir, exist_ok=True)
     X = X[genes]
@@ -92,6 +107,13 @@ def test_model(X, y, outdir):
         'Predicted': df['Predicted'].value_counts(),
     })
     summary.to_csv(outdir+'summary.csv')
+    
+    # make the report a df and return it
+    out = metrics.classification_report(y, model.predict(X), output_dict=True)
+    out = pd.DataFrame(report).T
+    out['outdir'] = outdir
+    return out
+    
 
 #======================== CODE ========================#
 # start off by running the datasets.R file
@@ -131,7 +153,7 @@ parameters = {
     'rf0__random_state': seeds,
     'extraTrees0__n_estimators': [10, 100, 200],
 }
-# parameters = {} # this takes too long let's just use the defaults
+parameters = {} # this takes too long let's just use the defaults
 
 # make a voting classifier made a bunch of RFs
 model = VotingClassifier(
@@ -176,36 +198,12 @@ plotting.plot_training_roc_curve_ci(
 #======================== Validation ========================#
 ######## Duke group 1
 os.makedirs(outdir+'/evaluation/', exist_ok=True)
-X_duke_t1 = pd.read_csv(f'{indir}/duke_t1/normalized_counts.csv', index_col=0, header=0).T
-y_duke_t1 = pd.read_csv(f'{indir}/duke_t1/label.csv')['hypercohort']
-test_model(X_duke_t1, y_duke_t1, outdir+'/evaluation/'+'duke_t1/')
-
-######## Duke group 2
-X_duke_t2 = pd.read_csv(f'{indir}/duke_t2/normalized_counts.csv', index_col=0, header=0).T
-y_duke_t2 = pd.read_csv(f'{indir}/duke_t2/label.csv')['hypercohort']
-test_model(X_duke_t2, y_duke_t2, outdir+'/evaluation/'+'duke_t2/')
-
-########## HARP MI_v_Obstr
-X_harp = pd.read_csv(f'{indir}/harp/normalized_counts.csv', index_col=0, header=0).T
-y_harp = pd.read_csv(f'{indir}/harp/label.csv')['MI_v_Obstr']
-test_model(X_harp, y_harp, outdir+'/evaluation/'+'harp/')
-
-########## SLE
-X_sle = pd.read_csv(f'{indir}/sle/normalized_counts.csv', index_col=0, header=0).T
-y_sle = pd.read_csv(f'{indir}/sle/label.csv')['Diagnosis']
-test_model(X_sle, y_sle, outdir+'/evaluation/'+'sle/')
-
-########## COVID
-X_covid = pd.read_csv(f'{indir}/covid/normalized_counts.csv', index_col=0, header=0).T
-y_covid = pd.read_csv(f'{indir}/covid/label.csv')['Cohort']
-test_model(X_covid, y_covid, outdir+'/evaluation/'+'covid/')
-
-########## MACLE2
-X_pace = pd.read_csv(f'{indir}/MACLE2/normalized_counts.csv', index_col=0, header=0).T
-y_pace = pd.read_csv(f'{indir}/MACLE2/label.csv')['censor_MACLE2']
-test_model(X_pace, y_pace, outdir+'/evaluation/'+'MACLE2/')
-
-########## PAD
-X_pace = pd.read_csv(f'{indir}/PAD/normalized_counts.csv', index_col=0, header=0).T
-y_pace = pd.read_csv(f'{indir}/PAD/label.csv')['PAD']
-test_model(X_pace, y_pace, outdir+'/evaluation/'+'PAD/')
+# get the normalized counts and labels from the subdirectories
+# make an empty report
+report_all = pd.DataFrame()
+for subdir in os.walk(indir):
+    X, y = get_data(indir, subdir)
+    report = test_model(X, y, outdir+'/evaluation/'+subdir)
+    report_all = report_all.append(report)
+    
+report_all.to_csv(outdir+'/evaluation/'+'report.csv', index=False)
