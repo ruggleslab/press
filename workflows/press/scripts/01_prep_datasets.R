@@ -20,7 +20,7 @@ params <- jsonlite::fromJSON(args$json)
 # Output directory:
 experiment <- "datasets"
 outdir <- file.path(params$outdir, paste0(experiment))
-dir.create(outdir, showWarnings = F)
+dir.create(outdir, showWarnings = FALSE)
 
 # Would be nice to have one script that is going to test variious normalization and transformation methods
 
@@ -30,7 +30,7 @@ library(readxl)
 
 # LOAD FUNCTIONS
 # space reserved for sourcing in functions
-suppressMessages(source("https://raw.githubusercontent.com/mattmuller0/Rtools/main/general_functions.R"))
+source("https://raw.githubusercontent.com/mattmuller0/Rtools/main/general_functions.R")
 
 #" Prepares the data for learning.
 #"
@@ -48,6 +48,7 @@ suppressMessages(source("https://raw.githubusercontent.com/mattmuller0/Rtools/ma
 prep_data <- function(
     counts, 
     meta, 
+    target,
     outdir,
     params = params
     ) {
@@ -78,11 +79,12 @@ prep_data <- function(
         dds, method = normalize,
         log = ifelse(normalize %in% c("cpm", "tmm", "mor"), TRUE, FALSE)
         )
-    label <- meta
+    label <- meta[common, target]
+    names(label) <- common
 
     write.csv(counts.norm[, common], file.path(outdir, "normalized_counts.csv"))
     write.csv(counts[, common], file.path(outdir, "raw_counts.csv"))
-    write.csv(label[common, ], file.path(outdir, "label.csv"))
+    write.csv(label, file.path(outdir, "label.csv"))
     return(list(counts = counts.norm, label = label))
 }
 
@@ -95,7 +97,8 @@ hypercohort_metatable$hypercohort_inrnaseq_AP <- plyr::mapvalues(hypercohort_met
 
 pace_data <- prep_data(
     pace_counts, 
-    hypercohort_metatable %>% drop_na(hypercohort_inrnaseq_AP), 
+    hypercohort_metatable %>% drop_na(hypercohort_inrnaseq_AP),
+    'hypercohort_inrnaseq_AP', 
     file.path(outdir, "derivation"),
     params = params
     )
@@ -116,20 +119,23 @@ duke_metadata <- duke_metadata %>%
 # with(duke_metadata, table(hypercohort, cohort))
 
 duke_data <- prep_data(
-    duke_counts, 
-    duke_metadata %>% filter(cohort == "group1") %>% select(hypercohort),
+    duke_counts,
+    duke_metadata %>% filter(cohort == "group1"),
+    "hypercohort",
     file.path(outdir, "duke_t1"),
     params = params
     )
 duke_data <- prep_data(
     duke_counts, 
-    duke_metadata %>% filter(cohort == "group2") %>% select(hypercohort),
+    duke_metadata %>% filter(cohort == "group2"),
+    "hypercohort",
     file.path(outdir, "duke_t2"),
     params = params
     )
 duke_all <- prep_data(
     duke_counts, 
-    duke_metadata %>% select(hypercohort),
+    duke_metadata,
+    "hypercohort",
     file.path(outdir, "duke_all"),
     params = params
     )
@@ -208,7 +214,8 @@ harp_metadata$bmi <- harp_metadata_addon2 %>%
 
 harp_data <- prep_data(
     harp_rawcounts,
-    harp_metadata %>% select(MI_v_Ctrl),
+    harp_metadata,
+    "MI_v_Ctrl",
     file.path(outdir, "harp"),
     params = params
     )
@@ -222,7 +229,8 @@ sle_meta$Diagnosis <- plyr::mapvalues(sle_meta$Diagnosis, from = c("sle", "contr
 
 sle_data <- prep_data(
     sle_counts, 
-    sle_meta, 
+    sle_meta,
+    "Diagnosis",
     file.path(outdir, "sle"),
     params = params
     )
@@ -236,7 +244,8 @@ covid_meta$Cohort <- plyr::mapvalues(covid_meta$Cohort, from = c("COVID", "Contr
 
 covid_data <- prep_data(
     covid_counts, 
-    covid_meta %>% select(Cohort), 
+    covid_meta,
+    "Cohort",
     file.path(outdir, "covid"),
     params = params
 )
@@ -247,7 +256,8 @@ pace_counts <- assay(pace_dds)
 pace_metatable <- as.data.frame(colData(pace_dds))
 pace_data <- prep_data(
     pace_counts, 
-    pace_metatable %>% select(PAD),
+    pace_metatable,
+    "PAD",
     file.path(outdir, "PAD"),
     params = params
 )
@@ -261,7 +271,8 @@ pace_metatable <- pace_metatable %>% drop_na(censor_MACLE2)
 pace_counts <- pace_counts[, rownames(pace_metatable)]
 pace_data <- prep_data(
     pace_counts,
-    pace_metatable %>% select(censor_MACLE2),
+    pace_metatable,
+    "censor_MACLE2",
     file.path(outdir, "MACLE2"),
     params = params
 )

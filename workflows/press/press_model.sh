@@ -1,11 +1,11 @@
 #!/bin/bash
 #SBATCH --job-name=press
-#SBATCH --mem=16GB
-#SBATCH --nodes=1
-#SBATCH --array=1-1
+#SBATCH --mem=32GB
+#SBATCH --nodes=4
+#SBATCH --array=1-10
 #SBATCH -p cpu_short
 #SBATCH --time=0-48:00:00
-#SBATCH --output=logs/press_%j.log
+#SBATCH --output=logs/press_%A_%a.log
 
 module load r/4.1.2
 
@@ -50,5 +50,3 @@ echo " "
 # echo "---------------------------------"
 # Rscript workflows/press/scripts/03_press_postprocessing.R --json ${json}
 
-
-# echo "Script execution completed."

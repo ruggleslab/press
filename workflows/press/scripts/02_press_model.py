@@ -64,7 +64,7 @@ def get_data(indir, dataset):
         raise ValueError(f'No label for {dataset}')
     
     X = pd.read_csv(f'{indir}/{dataset}/normalized_counts.csv', index_col=0, header=0).T
-    y = pd.read_csv(f'{indir}/{dataset}/label.csv').values.flatten()
+    y = pd.read_csv(f'{indir}/{dataset}/label.csv', index_col=0, header=0).values
     return X, y
 
 def test_model(X, y, outdir):
@@ -124,13 +124,15 @@ genes = pd.read_table(params['geneset']).values.flatten()
 genes_df = pd.DataFrame(genes, columns=['Gene'])
 genes_df.to_csv(outdir + 'genes.csv', index=False)
 
-X_pace = pd.read_csv(f'{indir}/derivation/normalized_counts.csv', index_col=0, header=0).T
-X_pace = X_pace[genes]
-y_pace = pd.read_csv(f'{indir}/derivation/label.csv')['hypercohort_inrnaseq_AP']
+X_pace, y_pace = get_data(indir, 'derivation')
 
 scaler = preprocessing.StandardScaler()
 X_pace = pd.DataFrame(scaler.fit_transform(X_pace), index=X_pace.index, columns=X_pace.columns)
 dump(scaler, outdir+'scaler.joblib')
+
+# print the shapes
+print("X_pace shape:", X_pace.shape)
+print("y_pace shape:", y_pace.shape)
 
 #======================== Modeling ========================#
 os.makedirs(outdir+'/modeling', exist_ok=True)
@@ -203,7 +205,7 @@ os.makedirs(outdir+'/evaluation/', exist_ok=True)
 report_all = pd.DataFrame()
 for subdir in os.walk(indir).__next__()[1]:
     X, y = get_data(indir, subdir)
-    report = test_model(X, y, outdir+'/evaluation/'+subdir)
+    report = test_model(X, y, outdir+'/evaluation/'+subdir+'/')
     report_all = report_all.append(report)
     
 report_all.to_csv(outdir+'/evaluation/'+'report.csv', index=False)
