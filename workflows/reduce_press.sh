@@ -30,8 +30,8 @@ for config in $configs; do
     echo "---------------------------------"
     echo "config: ${config}"
     echo " "
-    echo workflow/steps/press/press_model.sh ${config}
-    workflow/steps/press/press_model.sh ${config}
+    echo workflows/steps/press/press_model.sh ${config}
+    workflows/steps/press/press_model.sh ${config}
     echo " "
     echo " "
     echo " "
