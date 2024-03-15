@@ -1,3 +1,21 @@
+#!/bin/bash
+#SBATCH --job-name=press
+#SBATCH --mem=16GB
+#SBATCH --nodes=1
+#SBATCH -p cpu_short
+#SBATCH --time=0-48:00:00
+#SBATCH --output=logs/reduce_press_%j.log
+
+
+# WORKING DIRECTORY
+parentdir="$(dirname "dir")" # get the parent directory
+cd parentdir
+
+
+# SCRIPTS
+
+# end of script
+
 ##!/bin/bash
 
 # This script requires the use of:
@@ -12,14 +30,8 @@
 #' * "geneset": This key corresponds to the path of the selected features file. In this case, the path is "output/feature_selection/rfe/logreg/selected_features.csv".
 #' * "outdir": This key corresponds to the output directory where the results will be stored. In this case, the output directory is "output/reduce_press/rfeLOGREG_mor/".
 
-# if the log exists wipe it
-if [ -f logs/reduce_press_$(date +"%Y%m%d").log ]; then
-    rm logs/reduce_press_$(date +"%Y%m%d").log
-fi
-exec 1>>logs/reduce_press_$(date +"%Y%m%d").log 2>&1
-
 # make a list of the configs in the config directory
-configs=$(ls config/*.json)
+
 echo "Number of configs: $(echo $configs | wc -w)"
 echo " "
 echo " "
@@ -30,8 +42,8 @@ for config in $configs; do
     echo "---------------------------------"
     echo "config: ${config}"
     echo " "
-    echo workflows/steps/press/press_model.sh ${config}
-    workflows/steps/press/press_model.sh ${config}
+    echo Sbatching press_model.sh ${config}
+    sbatch workflows/steps/press/press_model.sh ${config}
     echo " "
     echo " "
     echo " "

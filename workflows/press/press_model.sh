@@ -1,13 +1,20 @@
 #!/bin/bash
+#SBATCH --job-name=press
+#SBATCH --mem=16GB
+#SBATCH --nodes=1
+#SBATCH --array=1-1
+#SBATCH -p cpu_short
+#SBATCH --time=0-48:00:00
+#SBATCH --output=logs/press_%j.log
 
-# if the log exists wipe it
-# if [ -f logs/press_model_$(date +"%Y%m%d").log ]; then
-#     rm logs/press_model_$(date +"%Y%m%d").log
-# fi
-exec 1>>logs/press_model_$(date +"%Y%m%d").log 2>&1
+module load r/4.1.2
+
+source /gpfs/data/ruggleslab/mm12865/mm12865_miniconda/etc/profile.d/conda.sh
+conda activate main
 
 # Get the parameters
-json=$1
+configs=$(ls config/*.json)
+json=$(echo $configs | cut -d " " -f ${SLURM_ARRAY_TASK_ID})
 
 # Print the parameters
 echo "Parameters"
@@ -23,7 +30,7 @@ echo " "
 # Run prep_datasets.sh
 echo "Running prep_datasets.R..."
 echo "---------------------------------"
-Rscript workflows/steps/press/01_prep_datasets.R --json ${json}
+Rscript workflows/press/scripts/01_prep_datasets.R --json ${json}
 
 echo " "
 echo " "
@@ -32,7 +39,7 @@ echo " "
 # Run press_model.sh
 echo "Running press_model.py..."
 echo "---------------------------------"
-python workflows/steps/press/02_press_model.py --json ${json}
+python workflows/press/scripts/02_press_model.py --json ${json}
 
 echo " "
 echo " "
@@ -41,7 +48,7 @@ echo " "
 # # Run press postprocessing.R
 # echo "Running press_postprocessing.R..."
 # echo "---------------------------------"
-# Rscript workflows/steps/press/03_press_postprocessing.R --json ${json}
+# Rscript workflows/press/scripts/03_press_postprocessing.R --json ${json}
 
 
 # echo "Script execution completed."

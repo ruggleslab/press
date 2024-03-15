@@ -64,7 +64,7 @@ def get_data(indir, dataset):
         raise ValueError(f'No label for {dataset}')
     
     X = pd.read_csv(f'{indir}/{dataset}/normalized_counts.csv', index_col=0, header=0).T
-    y = pd.read_csv(f'{indir}/{dataset}/label.csv')['hypercohort']
+    y = pd.read_csv(f'{indir}/{dataset}/label.csv').values.flatten()
     return X, y
 
 def test_model(X, y, outdir):
@@ -178,7 +178,7 @@ cv = model_selection.GridSearchCV(
     )
 cv.fit(X_pace, y_pace)
 cv_results = cv.cv_results_
-np.save(outdir+'/modeling/'+'cv_results.csv', cv_results)
+np.save(outdir+'/modeling/'+'cv_results', cv_results)
 
 model = cv.best_estimator_
 model.fit(X_pace, y_pace)
@@ -201,7 +201,7 @@ os.makedirs(outdir+'/evaluation/', exist_ok=True)
 # get the normalized counts and labels from the subdirectories
 # make an empty report
 report_all = pd.DataFrame()
-for subdir in os.walk(indir):
+for subdir in os.walk(indir).__next__()[1]:
     X, y = get_data(indir, subdir)
     report = test_model(X, y, outdir+'/evaluation/'+subdir)
     report_all = report_all.append(report)
