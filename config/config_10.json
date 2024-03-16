@@ -1,5 +1,5 @@
 {
     "normalization": "vst",
     "geneset": "output/feature_selection/rfe/logreg/selected_features.csv",
-    "outdir": "output/reduce_press/rfeLOGREG_vst/"
+    "outdir": "output/reduce_press/rfe_vst/"
 }

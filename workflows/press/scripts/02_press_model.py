@@ -82,7 +82,7 @@ def test_model(X, y, outdir):
     
     # save the predictions, prediction probabilities, and true labels
     df = pd.DataFrame({
-        'True': y,
+        'True': y.flatten(),
         'Predicted': model.predict(X),
         'Probabilities': model.predict_proba(X)[:,1]
     })
@@ -92,14 +92,6 @@ def test_model(X, y, outdir):
     sns.boxplot(x='True', y='Probabilities', data=df)
     plt.savefig(outdir+'probabilities_boxplot.png')
     df.to_csv(outdir+'predictions.csv', index=False)
-    
-    # make a boxplot using plotnine
-    p = (
-        p9.ggplot(df, p9.aes(x='True', y='Probabilities', fill='Type')) +
-            p9.geom_boxplot() +
-            p9.theme_classic()
-        )
-    p.save(outdir+'probabilities_boxplot.png')
     
     # make a summary of the groups
     summary = pd.DataFrame({
@@ -125,6 +117,7 @@ genes_df = pd.DataFrame(genes, columns=['Gene'])
 genes_df.to_csv(outdir + 'genes.csv', index=False)
 
 X_pace, y_pace = get_data(indir, 'derivation')
+X_pace = X_pace[genes]
 
 scaler = preprocessing.StandardScaler()
 X_pace = pd.DataFrame(scaler.fit_transform(X_pace), index=X_pace.index, columns=X_pace.columns)
@@ -155,7 +148,7 @@ parameters = {
     'rf0__random_state': seeds,
     'extraTrees0__n_estimators': [10, 100, 200],
 }
-parameters = {} # this takes too long let's just use the defaults
+# parameters = {} # this takes too long let's just use the defaults
 
 # make a voting classifier made a bunch of RFs
 model = VotingClassifier(
@@ -202,10 +195,12 @@ plotting.plot_training_roc_curve_ci(
 os.makedirs(outdir+'/evaluation/', exist_ok=True)
 # get the normalized counts and labels from the subdirectories
 # make an empty report
-report_all = pd.DataFrame()
+report_all = dict()
 for subdir in os.walk(indir).__next__()[1]:
     X, y = get_data(indir, subdir)
     report = test_model(X, y, outdir+'/evaluation/'+subdir+'/')
-    report_all = report_all.append(report)
+    report_all[subdir] = report
     
-report_all.to_csv(outdir+'/evaluation/'+'report.csv', index=False)
+# write the dict of dicts out
+with open(outdir+'/evaluation/'+'classification_reports.json', 'w') as f:
+    json.dump(report_all, f, indent=4)

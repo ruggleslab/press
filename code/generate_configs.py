@@ -2,9 +2,10 @@
 
 import os
 import json
+from glob import glob
 
 # Set up directories
-outdir = "config"
+config_dir = "config"
 
 #' The JSON config object contains three key-value pairs:
 #' * "normalization": This key corresponds to the method used for normalization. In this case, "mor" is used.
@@ -13,4 +14,24 @@ outdir = "config"
 
 # let's make a list of the normalization methods
 normalization = ["mor", "tmm", "vst"]
-geneset = []
+geneset = glob("output/feature_selection/**/selected_features.csv", recursive=True)
+
+# make pairwise combinations of normalization and geneset
+configs = []
+for norm in normalization:
+    for gene in geneset:
+        outdir = "output/reduce_press/" + gene.split("/")[2] + "_" + norm + "/"
+        config = {
+            "normalization": norm,
+            "geneset": gene,
+            "outdir": outdir
+        }
+        configs.append(config)
+
+# save each into the config directory
+if not os.path.exists(outdir):
+    os.makedirs(outdir)
+for i, config in enumerate(configs):
+    with open(f"{config_dir}/config_{i}.json", "w") as f:
+        json.dump(config, f, indent=4)
+        print(f"config_{i}.json saved into {config_dir}")

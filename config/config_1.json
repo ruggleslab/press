@@ -1,5 +1,5 @@
 {
-    "normalization": "tmm",
+    "normalization": "mor",
     "geneset": "output/feature_selection/rfe/rf/selected_features.csv",
-    "outdir": "output/reduce_press/rfeRF_tmm/"
+    "outdir": "output/reduce_press/rfe_mor/"
 }

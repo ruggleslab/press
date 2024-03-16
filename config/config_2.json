@@ -1,5 +1,5 @@
 {
     "normalization": "mor",
     "geneset": "output/feature_selection/rfe/logreg/selected_features.csv",
-    "outdir": "output/reduce_press/rfeLOGREG_mor/"
+    "outdir": "output/reduce_press/rfe_mor/"
 }

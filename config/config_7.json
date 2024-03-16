@@ -1,0 +1,5 @@
+{
+    "normalization": "tmm",
+    "geneset": "output/feature_selection/rfe/ada/selected_features.csv",
+    "outdir": "output/reduce_press/rfe_tmm/"
+}
