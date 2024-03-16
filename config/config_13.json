@@ -1,6 +1,6 @@
 {
     "normalization": "mor",
     "geneset": "output/feature_selection/logreg/selected_features.csv",
-    "outdir": "output/reduce_press/logreg_mor_RF/",
-    "model": "RF"
+    "outdir": "output/reduce_press/logreg_mor_LOGREG/",
+    "model": "LOGREG"
 }

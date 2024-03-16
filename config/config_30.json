@@ -1,6 +1,6 @@
 {
-    "normalization": "mor",
+    "normalization": "tmm",
     "geneset": "output/feature_selection/logreg/selected_features.csv",
-    "outdir": "output/reduce_press/logreg_mor_PRESS451/",
+    "outdir": "output/reduce_press/logreg_tmm_PRESS451/",
     "model": "PRESS451"
 }

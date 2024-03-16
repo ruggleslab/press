@@ -1,6 +1,6 @@
 {
-    "normalization": "mor",
+    "normalization": "tmm",
     "geneset": "output/feature_selection/rf/selected_features.csv",
-    "outdir": "output/reduce_press/rf_mor_RUS/",
+    "outdir": "output/reduce_press/rf_tmm_RUS/",
     "model": "RUS"
 }

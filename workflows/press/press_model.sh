@@ -2,7 +2,7 @@
 #SBATCH --job-name=press
 #SBATCH --mem=32GB
 #SBATCH --nodes=4
-#SBATCH --array=1-10
+#SBATCH --array=1-60
 #SBATCH -p cpu_short
 #SBATCH --time=0-48:00:00
 #SBATCH --output=logs/press_%A_%a.log

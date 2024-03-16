@@ -1,0 +1,6 @@
+{
+    "normalization": "tmm",
+    "geneset": "output/feature_selection/logreg/selected_features.csv",
+    "outdir": "output/reduce_press/logreg_tmm_RUS/",
+    "model": "RUS"
+}

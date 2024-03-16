@@ -1,0 +1,6 @@
+{
+    "normalization": "vst",
+    "geneset": "output/feature_selection/ada/selected_features.csv",
+    "outdir": "output/reduce_press/ada_vst_RF/",
+    "model": "RF"
+}
