@@ -223,11 +223,10 @@ plotting.plot_training_roc_curve_ci(
 os.makedirs(outdir+'/evaluation/', exist_ok=True)
 # get the normalized counts and labels from the subdirectories
 # make an empty report
-report_all = pd.DataFrame()
+reports = []
 for subdir in os.walk(indir).__next__()[1]:
     X, y = get_data(indir, subdir)
     report = test_model(X, y, outdir+'/evaluation/'+subdir+'/')
-    report_all = report_all.append(report)
-# write the dict of dicts out
-with open(outdir+'/evaluation/'+'classification_reports.json', 'w') as f:
-    json.dump(report_all, f, indent=4)
+    reports.append(report)
+report_all = pd.concat(reports)
+report_all.to_csv(outdir+'/evaluation/'+'summary.csv')
