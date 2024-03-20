@@ -79,13 +79,12 @@ prep_data <- function(
         dds, method = normalize,
         log = ifelse(normalize %in% c("cpm", "tmm", "mor"), TRUE, FALSE)
         )
-    label <- meta[common, target]
-    names(label) <- common
+    meta$label <- meta[[target]]
 
     write.csv(counts.norm[, common], file.path(outdir, "normalized_counts.csv"))
     write.csv(counts[, common], file.path(outdir, "raw_counts.csv"))
-    write.csv(label, file.path(outdir, "label.csv"))
-    return(list(counts = counts.norm, label = label))
+    write.csv(meta, file.path(outdir, "meta.csv"))
+    return(list(counts = counts.norm, meta = meta))
 }
 
 #======================== PACE ========================#
@@ -134,7 +133,7 @@ duke_data <- prep_data(
     )
 duke_all <- prep_data(
     duke_counts, 
-    duke_metadata,
+    duke_metadata %>% drop_na(hypercohort),
     "hypercohort",
     file.path(outdir, "duke_all"),
     params = params
@@ -255,25 +254,24 @@ pace_dds <- readRDS("data/pace/dds.rds")
 pace_counts <- assay(pace_dds)
 pace_metatable <- as.data.frame(colData(pace_dds))
 pace_data <- prep_data(
-    pace_counts, 
+    pace_counts,
     pace_metatable,
     "PAD",
     file.path(outdir, "PAD"),
     params = params
 )
 
-#======================== MACLE2 ========================#
+#======================== MACEampu ========================#
 pace_dds <- readRDS("data/pace/dds.rds")
 pace_counts <- assay(pace_dds)
 pace_metatable <- as.data.frame(colData(pace_dds))
-# remove the NA values
-pace_metatable <- pace_metatable %>% drop_na(censor_MACLE2)
+pace_metatable <- pace_metatable %>% drop_na(censor_MACEampu)
 pace_counts <- pace_counts[, rownames(pace_metatable)]
 pace_data <- prep_data(
     pace_counts,
     pace_metatable,
-    "censor_MACLE2",
-    file.path(outdir, "MACLE2"),
+    "censor_MACEampu",
+    file.path(outdir, "MACEampu"),
     params = params
 )
 

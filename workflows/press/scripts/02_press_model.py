@@ -61,11 +61,11 @@ def get_data(indir, dataset):
     # check if the counts and labels exist
     if not os.path.exists(f'{indir}/{dataset}/normalized_counts.csv'):
         raise ValueError(f'No normalized counts for {dataset}')
-    if not os.path.exists(f'{indir}/{dataset}/label.csv'):
+    if not os.path.exists(f'{indir}/{dataset}/meta.csv'):
         raise ValueError(f'No label for {dataset}')
     
     X = pd.read_csv(f'{indir}/{dataset}/normalized_counts.csv', index_col=0, header=0).T
-    y = pd.read_csv(f'{indir}/{dataset}/label.csv', index_col=0, header=0).values
+    y = pd.read_csv(f'{indir}/{dataset}/meta.csv', index_col=0, header=0)[['label']]
     return X, y
 
 def get_model(json):
@@ -112,6 +112,7 @@ def get_model(json):
         }
     else:
         raise ValueError(f'Unknown model: {model}')
+    # parameters = {} # this takes too long let's just use the defaults
     return m, parameters
 
 def test_model(X, y, outdir):
@@ -124,12 +125,41 @@ def test_model(X, y, outdir):
         f.write(report)
         
     plotting.plot_roc_curve_ci(model, X, y, title='ROC Curve', save_path=outdir+'roc_curve.png')
+    plt.close('all')
     plotting.plot_prc_curve(model, X, y, title='PRC Curve', save_path=outdir+'prc_curve.png')
+    plt.close('all')
     plotting.plot_confusion_matrix(y, model.predict(X), outdir+'confusion_matrix.png')
     plt.close('all')
     
+    # get the fpr, tpr, and thresholds
+    fpr, tpr, thresholds = metrics.roc_curve(y, model.predict_proba(X)[:,1])
+    optimal_idx = np.argmax(tpr - fpr)
+    optimal_threshold = thresholds[optimal_idx]
+    curve_dict = {
+        'model': json['model'],
+        'optimal_threshold': optimal_threshold,
+        'thresholds': thresholds,
+        'fpr': fpr,
+        'tpr': tpr,
+    }
+    
+    # for a given set of thresholds, get the sensitivity and specificity
+    thresholds = np.linspace(0, 1, 100)
+    sensitivity = []
+    specificity = []
+    for threshold in thresholds:
+        tn, fp, fn, tp = metrics.confusion_matrix(y, model.predict_proba(X)[:,1]>threshold).ravel()
+        sensitivity.append(tp/(tp+fn))
+        specificity.append(tn/(tn+fp))
+    threshold_df = pd.DataFrame({
+        'thresholds': thresholds,
+        f'{json["model"]}_sensitivity': sensitivity,
+        f'{json["model"]}_specificity': specificity,
+    })
+    
     # save the predictions, prediction probabilities, and true labels
     df = pd.DataFrame({
+        'ID': X.index,
         'True': y.flatten(),
         'Predicted': model.predict(X),
         'Probabilities': model.predict_proba(X)[:,1]
@@ -151,8 +181,8 @@ def test_model(X, y, outdir):
         'Precision': [metrics.precision_score(y, model.predict(X))],
         'Recall': [metrics.recall_score(y, model.predict(X))],
     })
-    summary.to_csv(outdir+'summary.csv')
-    return summary
+    summary.to_csv(outdir+'summary.csv', index=False)
+    return summary, curve_dict, threshold_df
     
 
 #======================== CODE ========================#
@@ -190,7 +220,6 @@ from imblearn.ensemble import BalancedRandomForestClassifier, BalancedBaggingCla
 # good RF random seeds:
 seeds = [1148093, 1095286, 1665788, 97057, 152878, 4543, 277452, 295106, 191278, 701043, 81388, 951209, 1327001, 527903, 1148093, 1095286, 1665788, 97057, 152878, 4543, 277452, 295106, 191278, 701043, 81388, 951209, 1327001, 527903]
 n = 28
-# parameters = {} # this takes too long let's just use the defaults
 
 # make a voting classifier made a bunch of RFs
 model, parameters = get_model(params)
@@ -223,10 +252,37 @@ plotting.plot_training_roc_curve_ci(
 os.makedirs(outdir+'/evaluation/', exist_ok=True)
 # get the normalized counts and labels from the subdirectories
 # make an empty report
-reports = []
+reports, curves, thresholds = [], [], []
 for subdir in os.walk(indir).__next__()[1]:
     X, y = get_data(indir, subdir)
-    report = test_model(X, y, outdir+'/evaluation/'+subdir+'/')
+    report, curve, threshold = test_model(X, y, outdir+'/evaluation/'+subdir+'/')
     reports.append(report)
+    curves.append(curve)
+    thresholds.append(threshold)
 report_all = pd.concat(reports)
 report_all.to_csv(outdir+'/evaluation/'+'summary.csv')
+
+# plot the curves
+plt.figure(figsize=(10,10))
+for curve in curves:
+    plt.plot(curve['fpr'], curve['tpr'], label=f'{curve["model"]} OT: {curve["optimal_threshold"]}')
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Overall ROC Curve')
+    plt.legend()
+plt.savefig(outdir+'/evaluation/'+'overall_roc_curve.png')
+with open(outdir+'/evaluation/'+'curves.json', 'w') as f:
+    json.dump(curves, f)
+
+# now the custom thresholds
+plt.figure(figsize=(10,10))
+for threshold in thresholds:
+    sns.lineplot(data=threshold, x='thresholds', y=f'{json["model"]}_sensitivity', label='Sensitivity')
+    sns.lineplot(data=threshold, x='thresholds', y=f'{json["model"]}_specificity', label='Specificity')
+    plt.xlabel('Threshold')
+    plt.ylabel('Value')
+    plt.title('Sensitivity and Specificity')
+    plt.legend()
+plt.savefig(outdir+'/evaluation/'+'sensitivity_specificity.png')
+thresholds_df = pd.merge(thresholds, on='thresholds')
+thresholds_df.to_csv(outdir+'/evaluation/'+'thresholds.csv')
