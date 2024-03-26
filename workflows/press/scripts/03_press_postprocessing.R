@@ -100,6 +100,12 @@ lta_or_plot <- ggplot(lta_or_table, aes(x = estimate, y = term, color = p < 0.05
     theme(legend.position = 'bottom') +
     labs(x = 'Odds Ratio', y = NULL, title = NULL, color = 'p < 0.05')
 
+#======================== Thresholding ========================#
+dir.create(file.path(post_dir, "thresholding"), showWarnings = F)
+# so we'd like to use the thresholding from the modeling predict the boundary for each experiment to see if we can find a trend
+
+
+
 #======================== END ========================#
 writeLines(capture.output(sessionInfo()), file.path(outdir, "session.log"))
 save.image(file.path(outdir, "image.RData"))
