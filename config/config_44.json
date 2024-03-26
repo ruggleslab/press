@@ -1,0 +1,6 @@
+{
+    "normalization": "vst",
+    "geneset": "output/feature_selection/rf/selected_features.csv",
+    "outdir": "output/reduce_press/rf_vst_RUS/",
+    "model": "RUS"
+}

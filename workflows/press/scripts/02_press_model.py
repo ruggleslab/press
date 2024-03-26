@@ -38,6 +38,7 @@ from sklearn import preprocessing
 from sklearn import model_selection
 from sklearn import metrics
 from sklearn import feature_selection
+
 # Custom libraries
 from MattTools import utils, plotting
 ## Set up directories
@@ -60,12 +61,59 @@ def get_data(indir, dataset):
     # check if the counts and labels exist
     if not os.path.exists(f'{indir}/{dataset}/normalized_counts.csv'):
         raise ValueError(f'No normalized counts for {dataset}')
-    if not os.path.exists(f'{indir}/{dataset}/label.csv'):
+    if not os.path.exists(f'{indir}/{dataset}/meta.csv'):
         raise ValueError(f'No label for {dataset}')
     
     X = pd.read_csv(f'{indir}/{dataset}/normalized_counts.csv', index_col=0, header=0).T
-    y = pd.read_csv(f'{indir}/{dataset}/label.csv', index_col=0, header=0).values
+    y = pd.read_csv(f'{indir}/{dataset}/meta.csv', index_col=0, header=0)[['label']]
     return X, y
+
+def get_model(json):
+    # get the model from the json
+    model = json['model']
+    if model == 'PRESS451':
+        m = VotingClassifier(
+            estimators=
+            [('rf'+str(i), RandomForestClassifier(class_weight='balanced', n_estimators=100)) for i in range(n)] +
+            [('extraTrees'+str(i), ExtraTreesClassifier(class_weight='balanced', random_state=seeds[i])) for i in range(n) ] +
+            [('gbc'+str(i), GradientBoostingClassifier(random_state=seeds[i], max_features='log2', n_estimators=60)) for i in range(n) ] +
+            [('ada'+str(i), AdaBoostClassifier(learning_rate=10)) for i in range(n) ],
+            voting='soft',n_jobs=-1,
+        )
+        parameters = {
+            'rf0__n_estimators': [20, 50, 100],
+            'rf0__class_weight': ['balanced', 'balanced_subsample'],
+            'rf0__random_state': seeds,
+            'extraTrees0__n_estimators': [10, 100, 200],
+        }
+    elif model == 'RF':
+        m = RandomForestClassifier()
+        parameters = {
+            'n_estimators': [10, 100, 200, 500],
+            'class_weight': ['balanced', 'balanced_subsample'],
+        }
+    elif model == 'ADA':
+        m = AdaBoostClassifier()
+        parameters = {
+            'n_estimators': [10, 100, 200, 500],
+            'learning_rate': [0.01, 0.1, 1, 10],
+        }
+    elif model == 'LOGREG':
+        m = LogisticRegression()
+        parameters = {
+            'C': [0.01, 0.1, 1, 10, 100],
+            'class_weight': ['balanced', None],
+        }
+    elif model == 'RUS':
+        m = RUSBoostClassifier()
+        parameters = {
+            'n_estimators': [10, 50, 100, 200, 500],
+            'learning_rate': [0.01, 0.1, 1, 10],
+        }
+    else:
+        raise ValueError(f'Unknown model: {model}')
+    # parameters = {} # this takes too long let's just use the defaults
+    return m, parameters
 
 def test_model(X, y, outdir):
     os.makedirs(outdir, exist_ok=True)
@@ -77,12 +125,42 @@ def test_model(X, y, outdir):
         f.write(report)
         
     plotting.plot_roc_curve_ci(model, X, y, title='ROC Curve', save_path=outdir+'roc_curve.png')
+    plt.close('all')
+    plotting.plot_prc_curve(model, X, y, title='PRC Curve', save_path=outdir+'prc_curve.png')
+    plt.close('all')
     plotting.plot_confusion_matrix(y, model.predict(X), outdir+'confusion_matrix.png')
     plt.close('all')
     
+    # get the fpr, tpr, and thresholds
+    fpr, tpr, thresholds = metrics.roc_curve(y, model.predict_proba(X)[:,1])
+    optimal_idx = np.argmax(tpr - fpr)
+    optimal_threshold = thresholds[optimal_idx]
+    curve_dict = {
+        'model': json['model'],
+        'optimal_threshold': optimal_threshold,
+        'thresholds': thresholds,
+        'fpr': fpr,
+        'tpr': tpr,
+    }
+    
+    # for a given set of thresholds, get the sensitivity and specificity
+    thresholds = np.linspace(0, 1, 100)
+    sensitivity = []
+    specificity = []
+    for threshold in thresholds:
+        tn, fp, fn, tp = metrics.confusion_matrix(y, model.predict_proba(X)[:,1]>threshold).ravel()
+        sensitivity.append(tp/(tp+fn))
+        specificity.append(tn/(tn+fp))
+    threshold_df = pd.DataFrame({
+        'thresholds': thresholds,
+        f'{json["model"]}_sensitivity': sensitivity,
+        f'{json["model"]}_specificity': specificity,
+    })
+    
     # save the predictions, prediction probabilities, and true labels
     df = pd.DataFrame({
-        'True': y,
+        'ID': X.index,
+        'True': y.flatten(),
         'Predicted': model.predict(X),
         'Probabilities': model.predict_proba(X)[:,1]
     })
@@ -93,26 +171,18 @@ def test_model(X, y, outdir):
     plt.savefig(outdir+'probabilities_boxplot.png')
     df.to_csv(outdir+'predictions.csv', index=False)
     
-    # make a boxplot using plotnine
-    p = (
-        p9.ggplot(df, p9.aes(x='True', y='Probabilities', fill='Type')) +
-            p9.geom_boxplot() +
-            p9.theme_classic()
-        )
-    p.save(outdir+'probabilities_boxplot.png')
-    
     # make a summary of the groups
     summary = pd.DataFrame({
-        'True': df['True'].value_counts(),
-        'Predicted': df['Predicted'].value_counts(),
+        'Dataset': [outdir.split('/')[-2]],
+        'AUC': [metrics.roc_auc_score(y, model.predict_proba(X)[:,1])],
+        'Accuracy': [metrics.accuracy_score(y, model.predict(X))],
+        'Balanced Accuracy': [metrics.balanced_accuracy_score(y, model.predict(X))],
+        'F1': [metrics.f1_score(y, model.predict(X))],
+        'Precision': [metrics.precision_score(y, model.predict(X))],
+        'Recall': [metrics.recall_score(y, model.predict(X))],
     })
-    summary.to_csv(outdir+'summary.csv')
-    
-    # make the report a df and return it
-    out = metrics.classification_report(y, model.predict(X), output_dict=True)
-    out = pd.DataFrame(report).T
-    out['outdir'] = outdir
-    return out
+    summary.to_csv(outdir+'summary.csv', index=False)
+    return summary, curve_dict, threshold_df
     
 
 #======================== CODE ========================#
@@ -125,6 +195,7 @@ genes_df = pd.DataFrame(genes, columns=['Gene'])
 genes_df.to_csv(outdir + 'genes.csv', index=False)
 
 X_pace, y_pace = get_data(indir, 'derivation')
+X_pace = X_pace[genes]
 
 scaler = preprocessing.StandardScaler()
 X_pace = pd.DataFrame(scaler.fit_transform(X_pace), index=X_pace.index, columns=X_pace.columns)
@@ -144,35 +215,14 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression, Perceptron
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.naive_bayes import GaussianNB
+from imblearn.ensemble import BalancedRandomForestClassifier, BalancedBaggingClassifier, RUSBoostClassifier
 
 # good RF random seeds:
 seeds = [1148093, 1095286, 1665788, 97057, 152878, 4543, 277452, 295106, 191278, 701043, 81388, 951209, 1327001, 527903, 1148093, 1095286, 1665788, 97057, 152878, 4543, 277452, 295106, 191278, 701043, 81388, 951209, 1327001, 527903]
 n = 28
-parameters = {
-    # 'rf0__max_features': ['log2', 'sqrt', 'auto'],
-    'rf0__n_estimators': [20, 50, 100],
-    'rf0__class_weight': ['balanced', 'balanced_subsample'],
-    'rf0__random_state': seeds,
-    'extraTrees0__n_estimators': [10, 100, 200],
-}
-parameters = {} # this takes too long let's just use the defaults
 
 # make a voting classifier made a bunch of RFs
-model = VotingClassifier(
-    estimators=
-    [('rf'+str(i), RandomForestClassifier(class_weight='balanced', n_estimators=100)) for i in range(n)] +
-    
-    [('extraTrees'+str(i), ExtraTreesClassifier(class_weight='balanced', random_state=seeds[i])) for i in range(n) ] +
-    
-    [('gbc'+str(i), GradientBoostingClassifier(random_state=seeds[i], max_features='log2', n_estimators=60)) for i in range(n) ] +
-    
-    [('ada'+str(i), AdaBoostClassifier(learning_rate=10)) for i in range(n) ],
-    
-    voting='soft',
-    n_jobs=-1,
-    )
-# model = RandomForestClassifier(class_weight='balanced', n_estimators=100, random_state=seeds[0])
-
+model, parameters = get_model(params)
 cv = model_selection.GridSearchCV(
     model, parameters,
     n_jobs=-1,
@@ -202,10 +252,37 @@ plotting.plot_training_roc_curve_ci(
 os.makedirs(outdir+'/evaluation/', exist_ok=True)
 # get the normalized counts and labels from the subdirectories
 # make an empty report
-report_all = pd.DataFrame()
+reports, curves, thresholds = [], [], []
 for subdir in os.walk(indir).__next__()[1]:
     X, y = get_data(indir, subdir)
-    report = test_model(X, y, outdir+'/evaluation/'+subdir+'/')
-    report_all = report_all.append(report)
-    
-report_all.to_csv(outdir+'/evaluation/'+'report.csv', index=False)
+    report, curve, threshold = test_model(X, y, outdir+'/evaluation/'+subdir+'/')
+    reports.append(report)
+    curves.append(curve)
+    thresholds.append(threshold)
+report_all = pd.concat(reports)
+report_all.to_csv(outdir+'/evaluation/'+'summary.csv')
+
+# plot the curves
+plt.figure(figsize=(10,10))
+for curve in curves:
+    plt.plot(curve['fpr'], curve['tpr'], label=f'{curve["model"]} OT: {curve["optimal_threshold"]}')
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Overall ROC Curve')
+    plt.legend()
+plt.savefig(outdir+'/evaluation/'+'overall_roc_curve.png')
+with open(outdir+'/evaluation/'+'curves.json', 'w') as f:
+    json.dump(curves, f)
+
+# now the custom thresholds
+plt.figure(figsize=(10,10))
+for threshold in thresholds:
+    sns.lineplot(data=threshold, x='thresholds', y=f'{json["model"]}_sensitivity', label='Sensitivity')
+    sns.lineplot(data=threshold, x='thresholds', y=f'{json["model"]}_specificity', label='Specificity')
+    plt.xlabel('Threshold')
+    plt.ylabel('Value')
+    plt.title('Sensitivity and Specificity')
+    plt.legend()
+plt.savefig(outdir+'/evaluation/'+'sensitivity_specificity.png')
+thresholds_df = pd.merge(thresholds, on='thresholds')
+thresholds_df.to_csv(outdir+'/evaluation/'+'thresholds.csv')

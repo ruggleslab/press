@@ -1,0 +1,6 @@
+{
+    "normalization": "tmm",
+    "geneset": "output/feature_selection/log2foldchange/selected_features.csv",
+    "outdir": "output/reduce_press/log2foldchange_tmm_LOGREG/",
+    "model": "LOGREG"
+}

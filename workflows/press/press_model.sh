@@ -2,7 +2,7 @@
 #SBATCH --job-name=press
 #SBATCH --mem=32GB
 #SBATCH --nodes=4
-#SBATCH --array=1-10
+#SBATCH --array=1-1
 #SBATCH -p cpu_short
 #SBATCH --time=0-48:00:00
 #SBATCH --output=logs/press_%A_%a.log
@@ -46,7 +46,12 @@ echo " "
 echo " "
 
 # # Run press postprocessing.R
-# echo "Running press_postprocessing.R..."
-# echo "---------------------------------"
-# Rscript workflows/press/scripts/03_press_postprocessing.R --json ${json}
+echo "Running press_postprocessing.R..."
+echo "---------------------------------"
+Rscript workflows/press/scripts/03_press_postprocessing.R --json ${json}
 
+echo " "
+echo " "
+echo " "
+
+echo "Done!"

@@ -1,5 +1,0 @@
-{
-    "normalization": "tmm",
-    "geneset": "output/feature_selection/basemean/selected_genes.csv",
-    "outdir": "output/reduce_press/basemean_vst/"
-}

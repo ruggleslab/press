@@ -1,0 +1,6 @@
+{
+    "normalization": "tmm",
+    "geneset": "output/feature_selection/ada/selected_features.csv",
+    "outdir": "output/reduce_press/ada_tmm_PRESS451/",
+    "model": "PRESS451"
+}

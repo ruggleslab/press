@@ -1,0 +1,6 @@
+{
+    "normalization": "mor",
+    "geneset": "output/feature_selection/log2foldchange/selected_features.csv",
+    "outdir": "output/reduce_press/log2foldchange_mor_RUS/",
+    "model": "RUS"
+}

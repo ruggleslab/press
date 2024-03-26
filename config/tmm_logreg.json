@@ -1,5 +1,0 @@
-{
-    "normalization": "tmm",
-    "geneset": "output/feature_selection/rfe/logreg/selected_features.csv",
-    "outdir": "output/reduce_press/rfeLOGREG_tmm/"
-}

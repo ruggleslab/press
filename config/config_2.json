@@ -1,0 +1,6 @@
+{
+    "normalization": "mor",
+    "geneset": "output/feature_selection/rf/selected_features.csv",
+    "outdir": "output/reduce_press/rf_mor_ADA/",
+    "model": "ADA"
+}
