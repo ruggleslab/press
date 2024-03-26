@@ -47,7 +47,7 @@ rownames(harp_metadata) <- gsub("-", "\\.", rownames(harp_metadata))
 harp_metadata_addon2$Subject.ID <- gsub("-", "\\.", harp_metadata_addon2$Subject.ID)
 
 # subset to the press genes
-press <- read.csv('data/clean/press_genes.csv', header = FALSE) %>% pull(.)
+press <- read.csv('data/press451_genes.csv', header = FALSE) %>% pull(.)
 
 # add missing rows of press genes
 harp_rawcounts %>% add_missing_rows(press) -> harp_rawcounts
@@ -55,11 +55,11 @@ harp_rawcounts %>% add_missing_rows(press) -> harp_rawcounts
 # make the se and save it
 harp_se <- make_se(harp_rawcounts, harp_metadata)
 harp_dds <- DESeqDataSet(harp_se, design = ~ 1) %>% DESeq()
-save_se(harp_dds[press,], file.path(outdir, "harp_se.RData"), normalize = 'log2-mor')
+save_se(harp_dds[press,], file.path(outdir, "harp_se.RData"), normalize = 'mor', log = TRUE)
 
 
 # Now from here we are going to move to python for predictions.
-preds <- read.csv('output/harp_hyper_v_hypo_predictions.csv', header = TRUE, row.names = 1)
+preds <- read.csv('output/harp_predictions__run_2/harp_hyper_v_hypo_predictions.csv', header = TRUE, row.names = 1)
 harp_metadata$press <- scale(preds$harp_preds)
 
 colnames(harp_metadata)
@@ -199,7 +199,7 @@ data_df <- data_df %>% drop_na(MI_v_Obstr)
 # Ethnicity + Prior.Stroke.TIA + bmi + 
 # try an mfx model OR
 model <- glm(
-  MI_v_Obstr ~ race + Ethnicity + age + bmi + press, 
+  MI_v_Obstr ~ press +race + Ethnicity + age + bmi + missing, 
   data = data_df,
   family = binomial(link = 'logit')
   )

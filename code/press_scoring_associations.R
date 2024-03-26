@@ -14,7 +14,7 @@ experiment <- "press_scoring_associations"
 outdir <- file.path('output', experiment)
 dir.create(outdir, showWarnings = F)
 
-#======================== LIBRARIES ========================#
+#======================== LIBRARIES ========================
 library(dplyr)
 library(tidyverse)
 library(ggplot2)
@@ -29,7 +29,7 @@ source('https://raw.githubusercontent.com/mattmuller0/Rtools/main/general_functi
 source('https://raw.githubusercontent.com/mattmuller0/Rtools/main/plotting_functions.R')
 source('https://raw.githubusercontent.com/mattmuller0/Rtools/main/stats_functions.R')
 
-#======================== PACE ========================#
+#======================== PACE ========================
 # load in the scores
 # press_scores <- read_xlsx('docs/pace_scoring_prior_set.xlsx')
 press_scores <- read_xlsx('data/pace_scoring.xlsx')
@@ -38,7 +38,6 @@ press_scores <- read_xlsx('data/pace_scoring.xlsx')
 press_scores <- press_scores %>%
     as.data.frame() %>%
     column_to_rownames('Sample_ID')
-
 
 # load in the metadata
 metadata <- read.csv('data/pace/comb_updated2021.csv', stringsAsFactors = T, header = T)
@@ -98,269 +97,89 @@ hist_plots <- plot_grid(p2, p3, p4, nrow = 3)
 # save the plots
 ggsave(file.path(outdir, 'pace_press_scoring_tiles_histograms.pdf'), hist_plots, width = 10, height = 10)
 
-
-# make barplots of the scores for each tile based upon:
-# - censor_MACLE2
-# - censor_MALE2
-# - censor_MACE
-
-# censor_MACLE2
-p2 <- metadata %>% 
-    ggplot(aes(x = tile_2, fill = censor_MACLE2)) +
-    geom_bar(position = 'dodge') +
-    theme_matt(18) +
-    labs(x = '2 Tiles', y = 'Count', title = 'PACE Press Scores by 2 Tiles and censor_MACLE2')
-p3 <- metadata %>% 
-    ggplot(aes(x = tile_3, fill = censor_MACLE2)) +
-    geom_bar(position = 'dodge') +
-    theme_matt(18) +
-    labs(x = '3 Tiles', y = 'Count', title = 'PACE Press Scores by 3 Tiles and censor_MACLE2')
-p4 <- metadata %>% 
-    ggplot(aes(x = tile_4, fill = censor_MACLE2)) +
-    geom_bar(position = 'dodge') +
-    theme_matt(18) +
-    labs(x = '4 Tiles', y = 'Count', title = 'PACE Press Scores by 4 Tiles and censor_MACLE2')
-# combine the plots
-macle_plots <- plot_grid(p2, p3, p4, nrow = 3)
-# save the plots
-ggsave(file.path(outdir, 'pace_press_scoring_tiles_censor_MACLE2.pdf'), macle_plots, width = 10, height = 10)
-
-# censor_MALE2
-p2 <- metadata %>% 
-    ggplot(aes(x = tile_2, fill = censor_MALE2)) +
-    geom_bar(position = 'dodge') +
-    theme_matt(18) +
-    labs(x = '2 Tiles', y = 'Count', title = 'PACE Press Scores by 2 Tiles and censor_MALE2')
-p3 <- metadata %>% 
-    ggplot(aes(x = tile_3, fill = censor_MALE2)) +
-    geom_bar(position = 'dodge') +
-    theme_matt(18) +
-    labs(x = '3 Tiles', y = 'Count', title = 'PACE Press Scores by 3 Tiles and censor_MALE2')
-p4 <- metadata %>%
-    ggplot(aes(x = tile_4, fill = censor_MALE2)) +
-    geom_bar(position = 'dodge') +
-    theme_matt(18) +
-    labs(x = '4 Tiles', y = 'Count', title = 'PACE Press Scores by 4 Tiles and censor_MALE2')
-# combine the plots
-male2_plots <- plot_grid(p2, p3, p4, nrow = 3)
-# save the plots
-ggsave(file.path(outdir, 'pace_press_scoring_tiles_censor_MALE2.pdf'), male2_plots, width = 10, height = 10)
-
-# censor_MACE
-p2 <- metadata %>% 
-    ggplot(aes(x = tile_2, fill = censor_MACE)) +
-    geom_bar(position = 'dodge') +
-    theme_matt(18) +
-    labs(x = '2 Tiles', y = 'Count', title = 'PACE Press Scores by 2 Tiles and censor_MACE')
-p3 <- metadata %>% 
-    ggplot(aes(x = tile_3, fill = censor_MACE)) +
-    geom_bar(position = 'dodge') +
-    theme_matt(18) +
-    labs(x = '3 Tiles', y = 'Count', title = 'PACE Press Scores by 3 Tiles and censor_MACE')
-p4 <- metadata %>%
-    ggplot(aes(x = tile_4, fill = censor_MACE)) +
-    geom_bar(position = 'dodge') +
-    theme_matt(18) +
-    labs(x = '4 Tiles', y = 'Count', title = 'PACE Press Scores by 4 Tiles and censor_MACE')
-# combine the plots
-mace_plots <- plot_grid(p2, p3, p4, nrow = 3)
-# save the plots
-ggsave(file.path(outdir, 'pace_press_scoring_tiles_censor_MACE.pdf'), mace_plots, width = 10, height = 10)
-
-#========= Correlation Plots =========#
-# get the correlation between the scores and the epi variables
-scores <- metadata$scores
-epi_variables <- metadata %>%
-    dplyr::select(
-        contains(c('180s', '300s', 'max')), 
-        scores
-        ) %>%
-    dplyr::select(
-        starts_with(
-            c(
-                'epi_20', 'epi_01', 'epi_04',
-                'adp_20', 'adp_01', 'adp_04',
-                'col_10', 'col_02',
-                'ser10', 
-                'aa_1600', 'aaexvivo_1600'
-                )
-            )
-        )
-
-### ALL SAMPLES
-# map cor.test to get a p-value and correlation
-epi_cor <- map_df(
-    epi_variables, 
-    ~cor.test(.x, scores) %>% 
-        broom::tidy() %>% 
-        dplyr::select(p.value, estimate) %>% 
-        dplyr::rename(p = p.value, scores = estimate)
-    )
-epi_cor$variable <- colnames(epi_variables)
-
-# plot the correlation to the scores
-p <- epi_cor %>%
-    as.data.frame() %>%
-    # rownames_to_column('variable') %>%
-    ggplot(aes(
-        x = factor(variable, levels = epi_cor$variable), 
-        y = scores,
-        col = p < 0.05
-        )
-    ) +
-    lims(y = c(0, 0.5)) +
-    geom_point() +
-    geom_text(aes(label = round(scores, 2)), vjust = -1) +
-    theme_matt(16) +
-    theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-    # add vertical lines
-    geom_vline(xintercept = 1:length(epi_variables), linetype = 'dashed', alpha = 0.2) +
-    labs(x = 'Epi Variable', y = 'Correlation to \nPACE Press Score', title = 'Correlation of Epi Variables to PACE Press Score ALL SAMPLES')
-# save the plot
-ggsave(file.path(outdir, 'pace_press_scoring_epi_correlation_all.pdf'), p, width = 10, height = 10)
-write.csv(epi_cor[, c('variable', 'scores', 'p')], file.path(outdir, 'pace_press_scoring_epi_correlation_all.csv'))
-
-
-### DERIVATION ONLY
-# map cor.test to get a p-value and correlation
-subseting <- metadata$labels != 'NA'
-epi_cor <- map_df(
-    epi_variables[subseting, ], 
-    ~cor.test(.x, scores[subseting]) %>% 
-        broom::tidy() %>% 
-        dplyr::select(p.value, estimate) %>% 
-        dplyr::rename(p = p.value, correlation = estimate)
-    )
-epi_cor$variable <- colnames(epi_variables)
-
-# plot the correlation to the scores
-p <- epi_cor %>%
-    as.data.frame() %>%
-    # rownames_to_column('variable') %>%
-    ggplot(aes(
-        x = factor(variable, levels = epi_cor$variable), 
-        y = correlation,
-        col = p < 0.05
-        )
-    ) +
-    lims(y = c(0, 0.5)) +
-    geom_point() +
-    geom_text(aes(label = round(correlation, 2)), vjust = -1) +
-    theme_matt(16) +
-    theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-    # add vertical lines
-    geom_vline(xintercept = 1:length(epi_variables), linetype = 'dashed', alpha = 0.2) +
-    labs(x = 'Epi Variable', y = 'Correlation to \nPACE Press Score', title = 'Correlation of Epi Variables to PACE Press Score DERIVATION ONLY')
-# save the plot
-ggsave(file.path(outdir, 'pace_press_scoring_epi_correlation_derivation.pdf'), p, width = 10, height = 10)
-write.csv(epi_cor[, c('variable', 'correlation', 'p')], file.path(outdir, 'pace_press_scoring_epi_correlation_derivation.csv'))
-
-
-
-### ANTIPLATELET ONLY
-# map cor.test to get a p-value and correlation
-subseting <- metadata$antiplatelet_therapy == '1:Yes'
-epi_cor <- map_df(
-    epi_variables[subseting, ], 
-    ~cor.test(.x, scores[subseting]) %>% 
-        broom::tidy() %>% 
-        dplyr::select(p.value, estimate) %>% 
-        dplyr::rename(p = p.value, correlation = estimate)
-    )
-epi_cor$variable <- colnames(epi_variables)
-
-# plot the correlation to the scores
-p <- epi_cor %>%
-    as.data.frame() %>%
-    # rownames_to_column('variable') %>%
-    ggplot(aes(
-        x = factor(variable, levels = epi_cor$variable), 
-        y = correlation,
-        col = p < 0.05
-        )
-    ) +
-    lims(y = c(0, 0.5)) +
-    geom_point() +
-    geom_text(aes(label = round(correlation, 2)), vjust = -1) +
-    theme_matt(16) +
-    theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-    # add vertical lines
-    geom_vline(xintercept = 1:length(epi_variables), linetype = 'dashed', alpha = 0.2) +
-    labs(x = 'Epi Variable', y = 'Correlation to \nPACE Press Score', title = 'Correlation of Epi Variables to PACE Press Score ANTIPLATELET ONLY')
-# save the plot
-ggsave(file.path(outdir, 'pace_press_scoring_epi_correlation_on_antiplt.pdf'), p, width = 10, height = 10)
-write.csv(epi_cor[, c('variable', 'correlation', 'p')], file.path(outdir, 'pace_press_scoring_epi_correlation_on_antiplt.csv'))
-
-
-### ANTIPLATELET ONLY
-# map cor.test to get a p-value and correlation
-subseting <- metadata$antiplatelet_therapy == '2:No'
-epi_cor <- map_df(
-    epi_variables[subseting, ], 
-    ~cor.test(.x, scores[subseting]) %>% 
-        broom::tidy() %>% 
-        dplyr::select(p.value, estimate) %>% 
-        dplyr::rename(p = p.value, correlation = estimate)
-    )
-epi_cor$variable <- colnames(epi_variables)
-
-# plot the correlation to the scores
-p <- epi_cor %>%
-    as.data.frame() %>%
-    # rownames_to_column('variable') %>%
-    ggplot(aes(
-        x = factor(variable, levels = epi_cor$variable), 
-        y = correlation,
-        col = p < 0.05
-        )
-    ) +
-    geom_point() +
-    geom_text(aes(label = round(correlation, 2)), vjust = -1) +
-    theme_matt(16) +
-    theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-    # add vertical lines
-    geom_vline(xintercept = 1:length(epi_variables), linetype = 'dashed', alpha = 0.2) +
-    labs(x = 'Epi Variable', y = 'Correlation to \nPACE Press Score', title = 'Correlation of Epi Variables to PACE Press Score OFF ANTIPLATELET ONLY')
-p
-# save the plot
-ggsave(file.path(outdir, 'pace_press_scoring_epi_correlation_off_antiplt.pdf'), p, width = 10, height = 10)
-write.csv(epi_cor[, c('variable', 'correlation', 'p')], file.path(outdir, 'pace_press_scoring_epi_correlation_off_antiplt.csv'))
-
-#======================== HIGH/LOW PRESS SCORING LTA ========================#
+#======================== PRESS SCORING LTA & FLOW ========================
+dir.create(file.path(outdir, 'plt_measures'), showWarnings = F)
 # exclusions
 excludes <- c('PACE062', 'PACE098', 'PACE245', 'PACE249')
 stats_df <- metadata[!rownames(metadata) %in% excludes, ]
-
-# So same breakdowns above but now as stats tables for the press scores as high / low
-# add the high / low scores to the metadata
-stats_df <- stats_df %>%
+stats_df <- stats_df %>% 
     mutate(
-        high_low_scores = factor(ntile(preds, 2), labels = c('LOW', 'HIGH'))
+        high_low_scores = factor(ntile(preds, 2), labels = c('LOW', 'HIGH')),
+        labels = ifelse(labels == "NA", NA, labels)
         )
-table(stats_df$high_low_scores)
+write.csv(stats_df, file.path(outdir, 'plt_measures', 'pace_metadata_with_press_scoring.csv'))
 
-# stats tables
-# ALL SAMPLES
-vars <- colnames(epi_variables)
 group <- 'high_low_scores'
-# make the tables
-all_sample_high_low_tab <- stats_table(stats_df, group, vars, printArgs = list(nonnorm = vars))
-deriv_sample_high_low_tab <- stats_table(filter(stats_df, labels != 'NA'), group, vars, printArgs = list(nonnorm = vars))
-antiplt_therapy_high_low_tab <- stats_table(filter(stats_df, antiplatelet_therapy == '1:Yes'), group, vars, printArgs = list(nonnorm = vars))
-no_antiplt_therapy_high_low_tab <- stats_table(filter(stats_df, antiplatelet_therapy == '2:No'), group, vars, printArgs = list(nonnorm = vars))
-label_high_low_tab <- stats_table(filter(stats_df, labels != 'NA'), 'labels', 'scores', printArgs = list(nonnorm = 'scores'))
+lta <- grep('^(epi_|col_|adp_|ser_|aa_*)(?!.*slope.*|.*lag.*|.*mfi.*|.*mlty.*)', colnames(metadata), value = T, perl = T)
+flow <- grep('(mfi_n|gate_n)$', colnames(metadata), value = T, perl = T)
+varsList <- list(lta = lta, flow = flow)
+for (vname in names(varsList)) {
+    dir.create(file.path(outdir, 'plt_measures', vname), showWarnings = F)
+    vars <- varsList[[vname]]
+    all_sample_high_low_tab <- stats_table(stats_df, group, vars, printArgs = list(nonnorm = vars))
+    write.csv(all_sample_high_low_tab, file.path(outdir, 'plt_measures', vname, 'pace_press_scoring_high_low_all_samples.csv'))
+    deriv_sample_high_low_tab <- stats_table(filter(stats_df, labels != 'NA'), group, vars, printArgs = list(nonnorm = vars))
+    write.csv(deriv_sample_high_low_tab, file.path(outdir, 'plt_measures', vname, 'pace_press_scoring_high_low_deriv_samples.csv'))
+    # Now let's look at it continuously with all samples
+    odds_ratio_table <- purrr::map_df(
+        vars, 
+        function(x) {
+            f <- as.formula(paste0(x, ' ~ scores'))
+            dat <- stats_df %>% drop_na(x)
+            dat[, x] <- scale(dat[, x])
+            m <- glm(f, data = dat)
+            broom::tidy(m) %>% 
+                filter(term == 'scores') %>%
+                mutate(term = x, conf.up = estimate + 1.96 * std.error, conf.low = estimate - 1.96 * std.error) %>%
+                dplyr::select(term, estimate, conf.low, conf.up, p = p.value)
+        }
+    )
+    write.csv(odds_ratio_table, file.path(outdir, 'plt_measures', vname, 'odds_ratio.csv'))
+    or_plot <- ggplot(odds_ratio_table, aes(x = estimate, y = term, color = p < 0.05)) +
+        geom_pointrange(aes(xmin = conf.low, xmax = conf.up)) +
+        lims(x = c(-0.5, 0.5)) +
+        geom_vline(xintercept = 0, linetype = 'dashed') +
+        theme_matt(16) +
+        theme(legend.position = 'bottom') +
+        labs(x = 'Beta Coefficient', y = NULL, title = NULL, color = 'p < 0.05')
+    ggsave(file.path(outdir, 'plt_measures', vname, 'odds_ratio.pdf'), or_plot, width = 12, height = 8)
 
-# save the tables
-write.csv(all_sample_high_low_tab, file.path(outdir, 'pace_press_scoring_high_low_all_samples.csv'))
-write.csv(deriv_sample_high_low_tab, file.path(outdir, 'pace_press_scoring_high_low_derivation.csv'))
-write.csv(antiplt_therapy_high_low_tab, file.path(outdir, 'pace_press_scoring_high_low_on_antiplt.csv'))
-write.csv(no_antiplt_therapy_high_low_tab, file.path(outdir, 'pace_press_scoring_high_low_off_antiplt.csv'))
-write.csv(label_high_low_tab, file.path(outdir, 'pace_press_scoring_high_low_labels.csv'))
+    # Now let's look at it continuously with the derivation samples
+    odds_ratio_table <- purrr::map_df(
+        vars, 
+        function(x) {
+            f <- as.formula(paste0(x, ' ~ scores'))
+            dat <- stats_df %>% drop_na(x, labels)
+            dat[, x] <- scale(dat[, x])
+            m <- glm(f, data = dat)
+            broom::tidy(m) %>% 
+                filter(term == 'scores') %>%
+                mutate(term = x, conf.up = estimate + 1.96 * std.error, conf.low = estimate - 1.96 * std.error) %>%
+                dplyr::select(term, estimate, conf.low, conf.up, p = p.value)
+        }
+    )
+    write.csv(odds_ratio_table, file.path(outdir, 'plt_measures', vname, 'odds_ratio_deriv.csv'))
+    or_plot <- ggplot(odds_ratio_table, aes(x = estimate, y = term, color = p < 0.05)) +
+        geom_pointrange(aes(xmin = conf.low, xmax = conf.up)) +
+        lims(x = c(-0.5, 0.5)) +
+        geom_vline(xintercept = 0, linetype = 'dashed') +
+        theme_matt(16) +
+        theme(legend.position = 'bottom') +
+        labs(x = 'Beta Coefficient', y = NULL, title = NULL, color = 'p < 0.05')
+    ggsave(file.path(outdir, 'plt_measures', vname, 'odds_ratio_deriv.pdf'), or_plot, width = 12, height = 8)
 
-stats_df %>% dplyr::select(labels)
-table(stats_df$labels)
+    # correlations as well
+    cor_table <- purrr::map_df(
+    vars, 
+    ~cor.test(stats_df[, 'scores'], stats_df[, .x], method = 'spearman') %>% 
+        broom::tidy() %>% 
+        mutate(variable = .x) %>%
+        dplyr::select(variable, r = estimate, p = p.value, method, alternative)
+    )
+write.csv(cor_table, file.path(outdir, 'plt_measures', vname, 'correlation.csv'))
+}
 
-#======================== EVENTS BY PRESS ========================#
+#======================== EVENTS BY PRESS ========================
 dir.create(file.path(outdir, 'events_by_press'), showWarnings = F)
 # So now let's look at the events by PRESS
 censors <- grep('censor', colnames(metadata), value = T)
@@ -411,7 +230,21 @@ colnames(kmDat)
 coxph_out <- coxph(Surv(time_to_MACLE2, censor_MACLE2) ~ preds + age + sex1 + race1 + ethnicity1 + smoking1, data = kmDat)
 summary(coxph_out)
 
-#======================== Yuhe Survival Code ========================#
+events <- gsub('censor_', '', censors)
+hr_table <- hazard_ratios_table(metadata_all, 'scores', censors, censor_prefix = 'censor_', time_prefix = 'time_to_', per_sd = TRUE)
+write.csv(hr_table, file.path(outdir, 'events_by_press', 'hazard_ratios.csv'))
+hr_table$HR_ci_upper[hr_table$HR_ci_upper > 5] <- 5
+forestPlot <- ggplot(hr_table, aes(x = estimate, y = censor, color = `p.value` < 0.05)) +
+    geom_pointrange(aes(xmin = HR_ci_lower, xmax = HR_ci_upper)) +
+    geom_vline(xintercept = 1, linetype = 'dashed') +
+    theme_matt(16) +
+    lims(x = c(0, 5)) +
+    theme(legend.position = 'bottom') +
+    labs(x = 'Hazard Ratio Per SD', y = NULL, title = NULL, color = 'p < 0.05')
+ggsave(file.path(outdir, 'events_by_press', 'hazard_ratios.pdf'), forestPlot, width = 12, height = 8)
+
+
+#======================== Yuhe Survival Code ========================
 # So my code is not working for the survival analysis
 # I'm going to just copy in Yuhe's code as I want to
 # repeat what she's done
@@ -423,34 +256,34 @@ df$min_time = apply(df[,c(vars)], 1, FUN = min, na.rm = TRUE)
 df$max_time = apply(df[,c(vars)], 1, FUN = max, na.rm = TRUE) 
 df$time_to_composite = ifelse(df$composite==1,df$min_time, df$max_time)
 
-
-m = coxph(Surv(time_to_MACLE, censor_MACLE)~score_cat+age_surgery+sex1+ethnicity1+bmi+diabetes1+carotid_artery_disease1+prior_stroke_mini_stroke1+cli, data=df)
-m = coxph(Surv(time_to_MACLE2, censor_MACLE2)~score_cat+age_surgery+sex1+ethnicity1+bmi+diabetes1+carotid_artery_disease1+prior_stroke_mini_stroke1+cli, data=df)
-m = coxph(Surv(time_to_composite, composite)~score_cat+age_surgery+sex1+ethnicity1+bmi+diabetes1+carotid_artery_disease1+prior_stroke_mini_stroke1+cli, data=df)
+## SO BASED ON THIS CODE LOOKS LIKE YUHE IS USING MACEampu
+# m = coxph(Surv(time_to_MACEampu, censor_MACEampu)~score_cat+age_surgery+sex1+ethnicity1+bmi+diabetes1+carotid_artery_disease1+prior_stroke_mini_stroke1+cli, data=df)
+# m = coxph(Surv(time_to_MACLE2, censor_MACLE2)~score_cat+age_surgery+sex1+ethnicity1+bmi+diabetes1+carotid_artery_disease1+prior_stroke_mini_stroke1+cli, data=df)
+m = coxph(Surv(time_to_composite, composite)~scores+age_surgery+sex1+ethnicity1+bmi+diabetes1+carotid_artery_disease1+prior_stroke_mini_stroke1+cli, data=df)
 ShowRegTable(m)
 
-m = coxph(Surv(time_to_MACLE, censor_MACLE)~score_cat, data=df)
-m = coxph(Surv(time_to_MACLE2, censor_MACLE2)~score_cat, data=df)
-m = coxph(Surv(time_to_composite, composite)~score_cat, data=df)
-ShowRegTable(m)
-
-# m = coxph(Surv(time_to_composite, composite)~score_cat2, data=df)
+# m = coxph(Surv(time_to_MACLE, censor_MACLE)~score_cat, data=df)
+# m = coxph(Surv(time_to_MACLE2, censor_MACLE2)~score_cat, data=df)
+# m = coxph(Surv(time_to_composite, composite)~score_cat, data=df)
 # ShowRegTable(m)
-# tiff('KM2.tiff', res = 200, height = 1000, width = 1200)
-# pdf('KM1.pdf')
-fit <- survfit(Surv(time_to_composite, composite)~score_cat, data=df)
-library(survminer)
-ggsurvplot(fit, data = df,
-           pval = T, pval.coord = c(0, 0.60),
-           risk.table = T,legend.title="", survscale = 'percent',
-           risk.table.height = 0.20,censor = F, legend.labs=c('Score<=Median','Score>Median'),
-           #legend.labs = c('Tertile 1','Tertile 2','Tertile 3'),
-           xlab = c('Time in days'),ylab = c('Cumulative Disease Rate'), fun = 'event', palette = 'lancet',
-           break.time.by=365,
-           tables.theme = theme_cleantable(),tables.y.text = FALSE)#+guides(color=guide_legend(nrow=2,byrow=TRUE))
-# dev.off()
 
-#======================== Timepoint 2 ========================#
+# # m = coxph(Surv(time_to_composite, composite)~score_cat2, data=df)
+# # ShowRegTable(m)
+# # tiff('KM2.tiff', res = 200, height = 1000, width = 1200)
+# # pdf('KM1.pdf')
+# fit <- survfit(Surv(time_to_composite, composite)~score_cat, data=df)
+# library(survminer)
+# ggsurvplot(fit, data = df,
+#            pval = T, pval.coord = c(0, 0.60),
+#            risk.table = T,legend.title="", survscale = 'percent',
+#            risk.table.height = 0.20,censor = F, legend.labs=c('Score<=Median','Score>Median'),
+#            #legend.labs = c('Tertile 1','Tertile 2','Tertile 3'),
+#            xlab = c('Time in days'),ylab = c('Cumulative Disease Rate'), fun = 'event', palette = 'lancet',
+#            break.time.by=365,
+#            tables.theme = theme_cleantable(),tables.y.text = FALSE)#+guides(color=guide_legend(nrow=2,byrow=TRUE))
+# # dev.off()
+
+#======================== Timepoint 2 ========================
 dir.create(file.path(outdir, 'timepoints'), showWarnings = F)
 # PRESS Scoring at Timepoint 2
 genes <- pull(read.csv('data/press451_genes.csv'))
@@ -468,7 +301,6 @@ cmd <- glue::glue(
 )
 system(cmd)
 
-
 # load the scores
 press_scores_timepoint2 <- read.csv(file.path(outdir, 'timepoints', 'pace_press_scores_timepoint2.csv'), row.names = 1)
 timepoint_metadata <- as.data.frame(colData(pace_dds))
@@ -476,33 +308,41 @@ timepointDat <- cbind(timepoint_metadata, press_scores_timepoint2)
 
 # get the intersect of the press scores and the timepointDat
 samples <- intersect(rownames(press_scores), rownames(timepointDat))
-timepointDat[samples, c('preds', 'scores')] <- press_scores[samples, c('preds', 'scores')]
+# timepointDat[samples, c('preds', 'scores')] <- press_scores[samples, c('preds', 'scores')]
 
 # only keep the values with duplicates in ID
 timepointDat$ID <- stringr::str_replace_all(rownames(timepointDat), '\\.3', '')
 timepointDat <- timepointDat[duplicated(timepointDat$ID)|duplicated(timepointDat$ID, fromLast = T),]
-timeDat <- timepointDat %>% 
-    dplyr::select(ID, timepoint, scores, censor_MACLE2) %>%
-    pivot_wider(names_from = timepoint, values_from = scores) %>%
-    mutate(waterfall = followup - baseline)
 
+timeDat <- timepointDat %>% 
+    dplyr::select(ID, timepoint, scores, censor_MACEampu) %>%
+    pivot_wider(names_from = timepoint, values_from = scores) %>%
+    mutate(
+        waterfall = followup - baseline,
+        consistent = (followup > 0.38) == (baseline > 0.38)
+        )
+timepointDat %>% dplyr::select(epi_04um_300s_n)
 p <- timeDat %>%
     ggplot(aes(x = baseline, y = followup)) +
-    geom_point() +
+    geom_point(aes(col = consistent)) +
     stat_cor(method = 'spearman') +
+    geom_hline(yintercept = 0.38, linetype = 'dashed') +
+    geom_vline(xintercept = 0.38, linetype = 'dashed') +
     ggpmisc::stat_poly_eq(vjust = 2.5) +
     geom_abline(intercept = 0, slope = 1, linetype = 'dashed') +
     geom_smooth(method = 'lm', se = TRUE) +
     theme_matt(14) +
+    theme(legend.position = 'top') +
     labs(x = 'Baseline', y = 'Follow Up', title = NULL)
 ggsave(file.path(outdir, 'timepoints', 'press_t1_v_t2.pdf'), p, width = 4, height = 4)
+with(timeDat, table(consistent))
 
 # waterfall plot
 p <- timeDat %>%
     ggplot(aes(
         x = fct_reorder(ID, waterfall),
         y = waterfall, 
-        fill = factor(censor_MACLE2, labels = c('MACLE2', 'No MACLE2'))
+        fill = factor(censor_MACEampu, labels = c('MACEAmpu', 'No MACEAmpu'))
         )) +
     geom_bar(stat = 'identity') +
     theme_matt(14) +
@@ -510,7 +350,7 @@ p <- timeDat %>%
     theme(axis.text.x = element_text(angle = 90, hjust = 1), legend.position = 'top')
 ggsave(file.path(outdir, 'timepoints', 'press_waterfall.pdf'), p, width = 10, height = 6)
 
-#======================== Bleeding ========================#
+#======================== Bleeding ========================
 dir.create(file.path(outdir, 'bleeding'), showWarnings = F)
 # comp bleeding
 meta <- metadata
@@ -555,3 +395,31 @@ p <- bleeding_table_long %>% drop_na() %>%
 ggplot2::ggsave(file.path(outdir, 'bleeding', 'event_boxplot.pdf'), p, width = 12, height = 8)
 
 
+#======================== PAD Modules ========================
+# I'd like to compare PRESS to the PAD modules that I defined
+# in the PAD Phenotyping paper.
+module_eigengenes <- read.table('data/pace_pad_phenotyping/module_eigengenes.txt', header = T, row.names = 1)
+module_samples <- intersect(rownames(module_eigengenes), rownames(metadata_all))
+
+meta_with_modules <- cbind(metadata_all[module_samples,], module_eigengenes[module_samples,])
+module_labels <- read.csv('data/pace_pad_phenotyping/module_enrichment_labels.csv', row.names = 1)
+rownames(module_labels)
+
+corrs <- purrr::map_df(
+    colnames(module_eigengenes), 
+    ~cor.test(meta_with_modules$scores, meta_with_modules[, .x], method = 'spearman') %>% 
+        broom::tidy() %>% 
+        mutate(module = gsub('ME', '', .x)) %>%
+        dplyr::select(module, estimate, p.value, method, alternative)
+    )
+corrs_labeled <- cbind(corrs, module_labels[corrs$module,])
+write.csv(corrs_labeled, file.path(outdir, 'module_correlations.csv'))
+corrs_labeled$module <- factor(corrs_labeled$module, levels = rev(rownames(module_labels)))
+
+corP <- ggplot(corrs_labeled, aes(x = estimate, y = module, color = p.value < 0.05)) +
+    geom_pointrange(aes(x = estimate, y = module, xmin = 0, xmax = estimate)) +
+    geom_vline(xintercept = 0, linetype = 'dashed') +
+    theme_matt(16) +
+    theme(legend.position = 'bottom') +
+    labs(x = 'Spearman Correlation', y = NULL, title = NULL, color = 'p < 0.05')
+ggsave(file.path(outdir, 'module_correlations.pdf'), corP, width = 12, height = 8)
