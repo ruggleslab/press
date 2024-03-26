@@ -1,13 +1,13 @@
 /.DS_Store
 
 # Folders
-data
-presentations
-publication
-output
-logs
+data/*
+presentations/*
+publication/*
+output/*
+logs/*
 notebooks/archive
-shared
+shared/*
 */archive
 */.ipynb_checkpoints
 */.ipynb_checkpoints/*
