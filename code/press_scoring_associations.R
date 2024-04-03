@@ -22,6 +22,7 @@ library(ggpubr)
 library(SummarizedExperiment)
 library(readxl)
 library(cowplot)
+library(magrittr)
 
 # LOAD FUNCTIONS
 # space reserved for sourcing in functions
@@ -96,6 +97,22 @@ p4 <- metadata %>%
 hist_plots <- plot_grid(p2, p3, p4, nrow = 3)
 # save the plots
 ggsave(file.path(outdir, 'pace_press_scoring_tiles_histograms.pdf'), hist_plots, width = 10, height = 10)
+metadata$insulin1
+# let's check it out by diabetes1 and inslulin1
+metadata %<>% mutate(
+    diabetes = case_when(
+        diabetes1 == '1:Yes' ~ 'Diabetes',
+        TRUE ~ 'Control'
+        )
+)
+
+diabetes_plot <- metadata %>% 
+    ggplot(aes(x = diabetes, y = scores)) +
+    geom_boxplot(outlier.shape = NA) +
+    geom_jitter(width = 0.05) +
+    stat_compare_means(method = 't.test') +
+    labs(x = NULL, y = 'Press Score')
+ggsave(file.path(outdir, 'pace_press_scoring_diabetes.pdf'), diabetes_plot, width = 6, height = 6)
 
 #======================== PRESS SCORING LTA & FLOW ========================
 dir.create(file.path(outdir, 'plt_measures'), showWarnings = F)

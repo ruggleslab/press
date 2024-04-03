@@ -55,7 +55,7 @@ harp_rawcounts %>% add_missing_rows(press) -> harp_rawcounts
 # make the se and save it
 harp_se <- make_se(harp_rawcounts, harp_metadata)
 harp_dds <- DESeqDataSet(harp_se, design = ~ 1) %>% DESeq()
-save_se(harp_dds[press,], file.path(outdir, "harp_se.RData"), normalize = 'mor', log = TRUE)
+# save_se(harp_dds[press,], file.path(outdir, "harp_se.RData"), normalize = 'mor', log = TRUE)
 
 
 # Now from here we are going to move to python for predictions.
@@ -71,6 +71,7 @@ p1 <- ggplot(harp_metadata, aes(x = Angiography.Report, y = press, fill = Angiog
   theme_matt(18) +
   theme(legend.position = 'none') +
   stat_compare_means()
+p1
 
 # list from tessa of who to include
 harp_selection <- c(
@@ -116,15 +117,24 @@ harp_metadata[rownames(harp_metadata) == 'HARP.01.0135.1', 'Angiography.Report']
 
 # merge the four groups into just MI and Control
 harp_metadata <- harp_metadata %>%
-    filter(rownames(.) %in% harp_selection) %>%
+    # filter(rownames(.) %in% harp_selection) %>%
     mutate(
         MI_v_Ctrl = ifelse(Angiography.Report == 'MI-CAD', 'MI-CAD',
         ifelse(Angiography.Report != 'MINOCA', 'Control', NA)),
+        
         MI_v_Obstr = ifelse(Angiography.Report == 'MI-CAD', 'MI-CAD',
-        ifelse(Angiography.Report == 'Obstructive', 'Obstructive', NA))
+        ifelse(Angiography.Report == 'Obstructive', 'Obstructive', NA)),
+        
+        MINOCA_v_Ctrl = case_when(
+            Angiography.Report == 'MINOCA' ~ 'MINOCA',
+            Angiography.Report == 'Obstructive' ~ 'Control',
+            Angiography.Report == 'Non-obstructive' ~ 'Control',
+            TRUE ~ NA_character_
+        
+        )
     )
-harp_metadata$MI_v_Ctrl <- factor(harp_metadata$MI_v_Ctrl, levels = c('Control', 'MI-CAD'))
-harp_metadata$MI_v_Obstr <- factor(harp_metadata$MI_v_Obstr, levels = c('Obstructive', 'MI-CAD'))
+# harp_metadata$MI_v_Ctrl <- factor(harp_metadata$MI_v_Ctrl, levels = c('Control', 'MI-CAD'))
+# harp_metadata$MI_v_Obstr <- factor(harp_metadata$MI_v_Obstr, levels = c('Obstructive', 'MI-CAD'))
 
 # add the bmi
 harp_metadata$bmi <- harp_metadata_addon2 %>%
@@ -140,6 +150,7 @@ p2 <- ggplot(filter(harp_metadata, !is.na(MI_v_Ctrl)), aes(x = MI_v_Ctrl, y = pr
   theme(legend.position = 'none') +
   stat_compare_means(method = 't.test') +
   labs(y = NULL, x = NULL)
+ggsave(file.path(outdir, "harp_predictions_mi_v_control.pdf"), p2)
 
 p3 <- ggplot(filter(harp_metadata, !is.na(MI_v_Obstr)), aes(x = MI_v_Obstr, y = press, fill = MI_v_Obstr)) +
   geom_boxplot() +
@@ -147,7 +158,15 @@ p3 <- ggplot(filter(harp_metadata, !is.na(MI_v_Obstr)), aes(x = MI_v_Obstr, y = 
   theme(legend.position = 'none') +
   stat_compare_means(method = 't.test') +
   labs(y = 'PRESS Score')
+ggsave(file.path(outdir, "harp_predictions_mi_v_obstr.pdf"), p3)
 
+p4 <- ggplot(filter(harp_metadata, !is.na(MINOCA_v_Ctrl)), aes(x = MINOCA_v_Ctrl, y = press, fill = MINOCA_v_Ctrl)) +
+  geom_boxplot() +
+  theme_matt(18) +
+  theme(legend.position = 'none') +
+  stat_compare_means(method = 't.test') +
+  labs(y = NULL, x = NULL)
+ggsave(file.path(outdir, "harp_predictions_minoca_v_control.pdf"), p4)
 
 # plot the two plots and save
 plots <- plot_grid(p2, p3, ncol = 2)
@@ -158,11 +177,9 @@ ggsave(file.path(outdir, "harp_predictions.pdf"), p3)
 # make a table of this all
 with(harp_metadata[harp_selection,], table(Angiography.Report))
 
-
 # get an adjusted odds ratio of the two groups
 library(oddsratio) # nolint
 library(mfx) # nolint
-
 
 # prep our data
 data_df <- harp_metadata %>% 
@@ -219,6 +236,7 @@ write.csv(or_adj, file.path(outdir, "beta.csv"), row.names = F)
 # the statement of choice
 library(glue)
 glue('After multivariable adjustment for age, race/ethnicity, BMI, diabetes, and stroke, PRESS was significantly associated with acute MI (β={or_adj$Beta}, 95% CI {or_adj$`2.5%`} to {or_adj$`97.5%`}, p={or_adj$`p-value`}).') # nolint
+
 
 #======================== END ========================#
 save.image(file.path(outdir, "image.RData"))

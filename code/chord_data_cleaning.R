@@ -18,10 +18,10 @@ print(packages[!sapply(pkgs, isTRUE)])
 
 # LOAD FUNCTIONS
 # space reserved for sourcing in functions
-source_url('https://raw.githubusercontent.com/mattmuller0/Rtools/main/general_functions.R')
-source_url('https://raw.githubusercontent.com/mattmuller0/Rtools/main/stats_functions.R')
-source_url('https://raw.githubusercontent.com/mattmuller0/Rtools/main/plotting_functions.R')
-source_url('https://raw.githubusercontent.com/mattmuller0/Rtools/main/rna_functions.R')
+source('https://raw.githubusercontent.com/mattmuller0/Rtools/main/general_functions.R')
+source('https://raw.githubusercontent.com/mattmuller0/Rtools/main/stats_functions.R')
+source('https://raw.githubusercontent.com/mattmuller0/Rtools/main/plotting_functions.R')
+source('https://raw.githubusercontent.com/mattmuller0/Rtools/main/rna_functions.R')
 
 #======================== CODE ========================#
 # load in the data
@@ -48,14 +48,19 @@ chord_counts <- normalize_counts(chord_dds, method = 'log2-mor')
 chord_counts <- add_missing_rows(chord_counts, press)
 
 # save the chord counts
-write.csv(chord_counts[press, ], file.path(outdir, "chord_press_counts.csv"))
+write.csv(t(chord_counts[press, ]), file.path(outdir, "chord_press_counts.csv"))
 
 # Fix some variables
 chord_dds$Gender <- factor(chord_dds$Gender, labels = c('Male', 'Female'))
 
+# let's run press now
+in_arg <- file.path(outdir, "chord_press_counts.csv")
+out_arg <- file.path(outdir, "chord_press_scores.csv")
+system(glue::glue('python3 code/run_press.py --data {in_arg} --out {out_arg}'))
+chord_press_scores <- read.csv(out_arg, header = TRUE, row.names = 1)
+
 # So now we are loading in the scores and comparisons from 'chord_press_scores.ipynb'
 chord_data_scoring <- read.csv('output/chord_press_scores/chord_data_with_press_scores.csv', header = TRUE, row.names = 1)
-head(chord_data_scoring)
 
 comparisons <- c('HHvLL', 'HH.HMvML.LL', 'Universal_HvL', 'UHvLL', 'HHvUL')
 comparisons_clean <- c('High-high vs Low-low', 'High-high.High-mid vs Mid-low.Low-low', 'Universal high vs low', 'Universal high vs low-low', 'High-high vs Universal low') # nolint
@@ -72,15 +77,31 @@ write.csv(chord_stats, file.path(outdir, "chord_press_stats.csv"))
 
 library(magrittr)
 # So not seeing much here, let's look at the breakdowns of the groupings
-metadata <- as.data.frame(colData(chord_dds)) %>% filter(Study_Timepoint == 1)
+metadata <- as.data.frame(colData(chord_dds)) #%>% filter(Study_Timepoint == 1)
 rownames(metadata) <- gsub('\\.1', '', rownames(metadata))
 metadata <- cbind(metadata, chord_data_scoring)
+metadata <- cbind(metadata, chord_press_scores)
 
 # get the epi data
 epiDat <- readxl::read_xlsx('data/chord/CHORD Final Hyper Hypo Subjects copy.xlsx', sheet = 'Sheet1')
 epiDat %<>% column_to_rownames('record_id')
 metadata <- cbind(metadata, epiDat[rownames(metadata), ])
 metadata %<>% mutate_at(vars(colnames(epiDat)), as.numeric)
+
+#======================== PRESS In Diabetes ========================
+metadata %<>% mutate(
+    diabetes = case_when(
+        Diabetes_Type == 1 ~ 'T1D',
+        Diabetes_Type == 2 ~ 'T2D',
+        Diabetes_.Y.N. == 0 ~ 'Control'
+    )
+)
+diabetes_plot <- ggplot(metadata, aes(x = diabetes, y = press_score)) +
+    geom_boxplot() +
+    geom_jitter(width = 0.1, alpha = 0.5) +
+    stat_compare_means(method = 't.test', comparisons = list(c('T1D', 'T2D'), c('T1D', 'Control'), c('T2D', 'Control'))) +
+    labs(x = 'Diabetes Type', y = 'PRESS Score')
+ggsave(file.path(outdir, "chord_press_diabetes.pdf"), plot = diabetes_plot, width = 6, height = 6)
 
 #======================== Plot the scores ========================#
 # plot the scores
@@ -289,6 +310,28 @@ plot_cors <- tmpDat %>%
     theme_bw() +
     labs(x = 'Value', y = 'PRESS Score')
 ggsave(file.path(outdir, 'subset', "chord_press_score_correlations_subset.png"), plot = plot_cors, width = 9, height = 9, dpi = 300)
+
+#======================== Lipid Lowering Therapy ========================
+# Let's look at the lipid lowering therapy on press scores
+overall_t1_v_t2 <- metadata %>%
+    filter(Intervention_group != "Repatha") %>%
+    ggplot(aes(x = Intervention_group, y = press_score, fill = Study_Timepoint)) +
+    geom_boxplot() +
+    stat_compare_means(method = 'anova') +
+    theme(legend.position = 'top') +
+    labs(x = NULL, y = 'PRESS Score', fill = 'Timepoint')
+ggsave(file.path(outdir, "chord_press_lipid_therapy.pdf"), plot = overall_t1_v_t2, width = 6, height = 6)
+
+diabetic_t1_v_t2 <- metadata %>%
+    filter(Intervention_group != "Repatha") %>%
+    ggplot(aes(x = Intervention_group, y = press_score, fill = Study_Timepoint)) +
+    geom_boxplot(outlier.shape = NA) +
+    geom_point(position=position_jitterdodge()) +
+    stat_compare_means(method = 't.test') +
+    theme(legend.position = 'top', axis.text.x = element_text(size = 8)) +
+    labs(x = NULL, y = 'PRESS Score', fill = 'Timepoint') +
+    facet_wrap(~diabetes)
+ggsave(file.path(outdir, "chord_press_lipid_therapy_diabetes.pdf"), plot = diabetic_t1_v_t2, width = 10, height = 6)
 
 #======================== END ========================#
 writeLines(capture.output(sessionInfo()), file.path(outdir, "session.log"))

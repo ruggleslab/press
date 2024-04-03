@@ -22,6 +22,7 @@ library(ggplot2)
 library(ggpubr)
 library(SummarizedExperiment)
 library(readxl)
+library(cowplot)
 
 # LOAD FUNCTIONS
 # space reserved for sourcing in functions
