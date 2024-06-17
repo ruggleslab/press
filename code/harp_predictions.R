@@ -126,11 +126,18 @@ harp_metadata <- harp_metadata %>%
         ifelse(Angiography.Report == 'Obstructive', 'Obstructive', NA)),
         
         MINOCA_v_Ctrl = case_when(
-            Angiography.Report == 'MINOCA' ~ 'MINOCA',
-            Angiography.Report == 'Obstructive' ~ 'Control',
-            Angiography.Report == 'Non-obstructive' ~ 'Control',
-            TRUE ~ NA_character_
+          Angiography.Report == 'MINOCA' ~ 'MINOCA',
+          Angiography.Report == 'Obstructive' ~ 'Control',
+          Angiography.Report == 'Non-obstructive' ~ 'Control',
+          TRUE ~ NA_character_
+        ),
         
+        MICAD_v_MINOCA_v_Ctrl = case_when(
+          Angiography.Report == 'MI-CAD' ~ 'MI-CAD',
+          Angiography.Report == 'MINOCA' ~ 'MINOCA',
+          Angiography.Report == 'Obstructive' ~ 'Control',
+          Angiography.Report == 'Non-obstructive' ~ 'Control',
+          TRUE ~ NA_character_
         )
     )
 # harp_metadata$MI_v_Ctrl <- factor(harp_metadata$MI_v_Ctrl, levels = c('Control', 'MI-CAD'))
@@ -165,6 +172,14 @@ p4 <- ggplot(filter(harp_metadata, !is.na(MINOCA_v_Ctrl)), aes(x = MINOCA_v_Ctrl
   theme_matt(18) +
   theme(legend.position = 'none') +
   stat_compare_means(method = 't.test') +
+  labs(y = NULL, x = NULL)
+ggsave(file.path(outdir, "harp_predictions_minoca_v_control.pdf"), p4)
+
+p5 <- ggplot(filter(harp_metadata, !is.na(MICAD_v_MINOCA_v_Ctrl)), aes(x = MICAD_v_MINOCA_v_Ctrl, y = press, fill = MICAD_v_MINOCA_v_Ctrl)) +
+  geom_boxplot() +
+  theme_matt(18) +
+  theme(legend.position = 'none') +
+  stat_compare_means(method = 't.test', comparisons = list(c('MI-CAD', 'MINOCA'))) +
   labs(y = NULL, x = NULL)
 ggsave(file.path(outdir, "harp_predictions_minoca_v_control.pdf"), p4)
 

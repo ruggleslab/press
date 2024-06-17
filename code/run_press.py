@@ -18,7 +18,7 @@ def predict(data_path, model):
         )
     
     # get the predictions and scores
-    preds = model.predict_proba(data)[::,1]
+    preds = model.predict_proba(data)[:,1]
     # if the shape of the data is [n, < 3] then don't scale
     if data.shape[1] < 3:
         print("Using predefined scaling.")
@@ -28,13 +28,7 @@ def predict(data_path, model):
         scores = preprocessing.scale(preds)
 
     # make a dataframe with the scores and preds
-    out = pd.DataFrame(
-        {   
-            "preds": preds,
-            "scores": scores
-        },
-        index=data.index
-    )
+    out = pd.DataFrame({"preds": preds, "scores": scores}, index=data.index)
     return out
 
 def check_press(data_path):
