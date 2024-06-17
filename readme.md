@@ -9,12 +9,13 @@ This repository contains the code used to create PRESS. Is is mainly written in 
 The code as is relies on a config file to run. The corresponding manuscript can be found [here](addLink).
 ## Usage
 
-* platelet-hyper-hypo-analysis-3-agr-control.R
+* 01_press_derivation_script.R
   * This script was used to perform the analysis of the platelet hyper/hypo geneset creation and analysis
-* model_testing.ipynb
+* 02_press_modeling.ipynb
   * This notebook was used to test the PRESS model
-* run_press.py
+* 03_run_press.py
     * This script was used to run the PRESS model
+* There are a myriad of other scripts that run the validaiton and testing of the PRESS model
 
 ## License
 
