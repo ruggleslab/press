@@ -25,9 +25,9 @@ print(packages[!sapply(pkgs, isTRUE)])
 
 # LOAD FUNCTIONS
 # space reserved for sourcing in functions
-source_url('https://raw.githubusercontent.com/mattmuller0/Rtools/main/general_functions.R')
-source_url('https://raw.githubusercontent.com/mattmuller0/Rtools/main/plotting_functions.R')
-source_url('https://raw.githubusercontent.com/mattmuller0/Rtools/main/converting_functions.R')
+source('https://raw.githubusercontent.com/mattmuller0/Rtools/main/general_functions.R')
+source('https://raw.githubusercontent.com/mattmuller0/Rtools/main/plotting_functions.R')
+source('https://raw.githubusercontent.com/mattmuller0/Rtools/main/converting_functions.R')
 
 #======================== CODE ========================#
 # load in the data
@@ -60,9 +60,6 @@ harp_dds <- DESeqDataSet(harp_se, design = ~ 1) %>% DESeq()
 
 # Now from here we are going to move to python for predictions.
 preds <- read.csv('output/harp_predictions__run_2/harp_hyper_v_hypo_predictions.csv', header = TRUE, row.names = 1)
-harp_metadata$press <- scale(preds$harp_preds)
-
-colnames(harp_metadata)
 
 # plot the four groups of harp
 p1 <- ggplot(harp_metadata, aes(x = Angiography.Report, y = press, fill = Angiography.Report)) +
@@ -73,7 +70,6 @@ p1 <- ggplot(harp_metadata, aes(x = Angiography.Report, y = press, fill = Angiog
   stat_compare_means()
 p1
 
-# list from tessa of who to include
 harp_selection <- c(
 # MI-CAD   
 'HARP-01-0246-1',
@@ -112,12 +108,8 @@ gsub("-", "\\.", .)
 # get a list of the IDs we are missing from the metadata
 harp_selection[!harp_selection %in% rownames(harp_metadata)]
 
-# change HARP.01.0135.1 to MI-CAD
-harp_metadata[rownames(harp_metadata) == 'HARP.01.0135.1', 'Angiography.Report'] <- 'MI-CAD'
-
 # merge the four groups into just MI and Control
 harp_metadata <- harp_metadata %>%
-    # filter(rownames(.) %in% harp_selection) %>%
     mutate(
         MI_v_Ctrl = ifelse(Angiography.Report == 'MI-CAD', 'MI-CAD',
         ifelse(Angiography.Report != 'MINOCA', 'Control', NA)),
@@ -222,11 +214,10 @@ data_df$missing <- ifelse(is.na(data_df$bmi), 'missing', 'not missing')
 data_df$bmi <- as.numeric(data_df$bmi)
 data_df$bmi[is.na(data_df$bmi) & data_df$MI_v_Obstr == 'Obstructive'] <- mean(data_df$bmi[data_df$MI_v_Obstr == 'Obstructive'], na.rm = T)
 data_df$bmi[is.na(data_df$bmi) & data_df$MI_v_Obstr == 'MI-CAD'] <- mean(data_df$bmi[data_df$MI_v_Obstr == 'MI-CAD'], na.rm = T)
-colnames(data_df)
 
 data_df <- data_df %>% drop_na(MI_v_Obstr)
 model <- glm(
-  MI_v_Obstr ~ press + race + Ethnicity + age + bmi + missing, 
+  MI_v_Obstr ~ press + race + Ethnicity + age + bmi + Diabetes + Prior.Stroke.TIA + missing, 
   data = data_df,
   family = binomial(link = 'logit')
   )
