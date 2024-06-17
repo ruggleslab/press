@@ -15,7 +15,8 @@ The code as is relies on a config file to run. The corresponding manuscript can 
   * This notebook was used to test the PRESS model
 * 03_run_press.py
     * This script was used to run the PRESS model
-* There are a myriad of other scripts that run the validaiton and testing of the PRESS model
+* 04_harp_validation.R
+    * This script was used to validate the PRESS model in the HARP cohort
 
 ## License
 
