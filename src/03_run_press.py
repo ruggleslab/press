@@ -50,7 +50,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     utils.hide_warnings()
-    model = load("models/jobs/press451.joblib")
+    model = load("https://github.com/ruggleslab/press/blob/8d1b0caf7ddb1243943bb129f4d81ad1f6ae8fb2/models/jobs/press451_with_scaler.joblib")
     print("Checking data...")
     check_press(args.data)
     

@@ -8,7 +8,7 @@ This repository contains the code used to create PRESS. Is is mainly written in 
 
 The code as is relies on a config file to run. The corresponding manuscript can be found here (TBD).
 
-The PRESS Model can be run either using the 03_run_press.py script or by downloading and using the PRESS model from this repository. If you are downloading the model, we recommend you use the included scaler unless you believe there will be significant batch effects in your data.
+The PRESS Model can be run either using the 03_run_press.py script or by downloading and using the PRESS model from this repository. If you are downloading the model, we recommend you use the included scaler unless you believe there will be significant batch effects in your data. Data should be preprocessed and normalized using the log2 median of ratios method.
 
 ## Usage
 
