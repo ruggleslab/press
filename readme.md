@@ -29,5 +29,6 @@ This project is licensed under the [MIT License](LICENSE).
 
 * Matthew Muller
 * <mm12865@nyu.edu>
-* Project Link: [GitHub Repository](https://github.com/mattmuller0/press)
+* Project Link: [GitHub Repository](https://github.com/ruggleslab/press)
+* Zenodo Link: [![DOI](https://zenodo.org/badge/816318277.svg)](https://zenodo.org/doi/10.5281/zenodo.12537340)
 * Manuscript Link: TBD
