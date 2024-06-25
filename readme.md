@@ -6,7 +6,10 @@
 
 This repository contains the code used to create PRESS. Is is mainly written in R and Python.
 
-The code as is relies on a config file to run. The corresponding manuscript can be found [here](addLink).
+The code as is relies on a config file to run. The corresponding manuscript can be found here (TBD).
+
+The PRESS Model can be run either using the 03_run_press.py script or by downloading and using the PRESS model from this repository. If you are downloading the model, we recommend you use the included scaler unless you believe there will be significant batch effects in your data.
+
 ## Usage
 
 * 01_press_derivation_script.R
