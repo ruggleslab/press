@@ -66,15 +66,10 @@ covid_press_plot <- ggplot(dat, aes(x = factor(comp_covid__covid_v_control), y =
     theme(legend.position = "none")
 ggsave(file.path(outdir, "covid_scores", "covid_press_plot.pdf"), covid_press_plot, width = 5, height = 5)
 
-
-
-
-
-
-
-
-
-
+#======================== PRESS GSEA ========================
+# em2 <- GSEA(geneList, TERM2GENE = C3_t2g)
+# we can do this for PRESS Up and PRESS Down
+press_up <- 
 
 #======================== END ========================
 writeLines(capture.output(sessionInfo()), file.path(outdir, "session.log"))
