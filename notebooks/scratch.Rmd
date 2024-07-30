@@ -1,0 +1,109 @@
+---
+title: "Scratch R Code"
+author: "Matthew Muller"
+output:
+  pdf_document:
+    toc: true
+    toc_float: true
+---
+
+# PRESS451 Correlation Analysis
+```{r, echo=FALSE}
+# Load the data
+dat <- read.csv('data/clean/pace/features.csv', row.names=1)
+
+ComplexHeatmap::Heatmap(
+    cor(dat, method = 'spearman'),
+    name = 'Rho',
+    col = circlize::colorRamp2(c(-1, 0, 1), c("blue", "white", "red")),
+    show_row_names = TRUE,
+    show_column_names = FALSE,
+    row_names_gp = grid::gpar(fontsize = 4)
+    )
+```
+
+
+# Look at the bleeding
+```{r, echo=FALSE}
+dat <- read.csv('data/metadata_9_20220422.csv', row.names=1)
+colnames(dat)
+
+with(dat, table(comp_bleeding__strmajorbleed_v_nobleed))
+```
+
+```{r}
+library(ggplot2)
+p <- 'shared/20240312_reviewer_request/fig3/fig3e_pace_derivation_scores.csv'
+p2 <- '/Users/muller/Library/CloudStorage/GoogleDrive-mm12865@nyu.edu/My Drive/RugglesLab/projects/platelet-activity/output/pace_scores_press_01.csv'
+p3 <- '/Users/muller/Library/CloudStorage/GoogleDrive-mm12865@nyu.edu/My Drive/RugglesLab/projects/platelet-activity/output/pace_predictions.csv'
+x <- read.csv(p, row.names=1)
+x2 <- read.csv(p2, row.names=1)
+x3 <- read.csv(p3, row.names=1)
+x <- rbind(x, x2)
+ggplot(x3, aes(x = factor(label), y = score)) +
+    geom_boxplot()
+
+
+# let's try another folder
+p4 <- '/Users/muller/Library/CloudStorage/GoogleDrive-mm12865@nyu.edu/My Drive/RugglesLab/projects/platelet-activity/output/pace_press_scoring_tiles__run_4/pace_press_metadata_with_scores_and_tiles.csv'
+x4 <- read.csv(p4, row.names=1)
+colnames(x4)
+ggplot(x4, aes(x = factor(labels), y = scores)) +
+    geom_boxplot()
+```
+
+```{r}
+library(tidyverse)
+# nature communications wants summary stats for all these as well
+# let's give them literally everything since it's annoying
+# means, medians, std devs, quantiles, iqr, min, max, whiskers, n
+fig3b <- read_csv("shared/20240312_reviewer_request/fig3/fig3e_cvscores.csv")
+fig3b_summary <- fig3b %>%
+    group_by(labels) %>%
+    summarize(
+        mean = mean(scores),
+        median = median(scores),
+        sd = sd(scores),
+        q25 = quantile(scores, 0.25),
+        q75 = quantile(scores, 0.75),
+        iqr = IQR(scores),
+        min = min(scores),
+        max = max(scores),
+        n = n()
+    )
+write_csv(fig3b_summary, "shared/20240312_reviewer_request/fig3/fig3e_cvscores_summary.csv")
+
+fig4b <- read_csv("shared/20240312_reviewer_request/fig4/fig4c_duke_scores.csv")
+fig4b_summary <- fig4b %>%
+    group_by(labels) %>%
+    summarize(
+        mean = mean(preds),
+        median = median(preds),
+        sd = sd(preds),
+        q25 = quantile(preds, 0.25),
+        q75 = quantile(preds, 0.75),
+        iqr = IQR(preds),
+        min = min(preds),
+        max = max(preds),
+        n = n()
+    )
+write_csv(fig4b_summary, "shared/20240312_reviewer_request/fig4/fig4c_duke_scores_summary.csv")
+
+fig5d <- read_csv("shared/20240312_reviewer_request/fig5/fig5d_harp_mi.csv")
+colnames(fig5d) # MI_v_Ctrl and press
+fig5d_summary <- fig5d %>%
+    group_by(MI_v_Ctrl) %>%
+    summarize(
+        mean = mean(press),
+        median = median(press),
+        sd = sd(press),
+        q25 = quantile(press, 0.25),
+        q75 = quantile(press, 0.75),
+        iqr = IQR(press),
+        min = min(press),
+        max = max(press),
+        n = n()
+    )
+write_csv(fig5d_summary, "shared/20240312_reviewer_request/fig5/fig5d_harp_mi_summary.csv")
+
+```

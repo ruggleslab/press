@@ -65,7 +65,6 @@ p1 <- ggplot(harp_metadata, aes(x = Angiography.Report, y = press, fill = Angiog
   theme_matt(18) +
   theme(legend.position = "none") +
   stat_compare_means()
-p1
 
 # change HARP.01.0135.1 to MI-CAD
 harp_metadata[rownames(harp_metadata) == "HARP.01.0135.1", "Angiography.Report"] <- "MINOCA" # NO UPDATE THIS IS WRONG # UPDATE THIS NOW MINOCA AS OF 2024-04-25!

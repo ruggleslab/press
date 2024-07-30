@@ -23,9 +23,9 @@ library(tidyverse)
 
 # LOAD FUNCTIONS
 # space reserved for sourcing in functions
-source_url('https://raw.githubusercontent.com/mattmuller0/Rtools/main/general_functions.R')
-source_url('https://raw.githubusercontent.com/mattmuller0/Rtools/main/plotting_functions.R')
-source_url('https://raw.githubusercontent.com/mattmuller0/Rtools/main/stats_functions.R')
+source('https://raw.githubusercontent.com/mattmuller0/Rtools/main/general_functions.R')
+source('https://raw.githubusercontent.com/mattmuller0/Rtools/main/plotting_functions.R')
+source('https://raw.githubusercontent.com/mattmuller0/Rtools/main/stats_functions.R')
 
 #======================== CODE ========================
 # Let's prep the data
@@ -92,7 +92,9 @@ meta %<>% mutate(
         characteristic__treatment_drug == 2 ~ 'group4',
         characteristic__treatment_drug == 3 ~ 'group5'
     )
-    )
+    ) %>%
+    # filter out people with low AA lta since they are on aspirin
+    filter(characteristic__arach_max_05 > 20 | cohort != "group1" | cohort != "group5")
 # meta %>%
 #     filter(characteristic__subject_id %in% ids & hyper_baseline == 'hyper') %>%
 #     rstatix::t_test(scores ~ characteristic__treatment_drug_label, paired = TRUE, detailed = TRUE)
@@ -365,7 +367,7 @@ normal_samples <- meta %>%
 above_median_samples <- meta %>% filter(press_bucket == 2) %>% pull(characteristic__subject_id)
 below_median_samples <- meta %>% filter(press_bucket == 1) %>% pull(characteristic__subject_id)
 # let's perform the mediation analysis on a matched set of features
-regex <- 'scores|PlateletFunctionScore|__(aa|arach|epi|adp|coll)|abc_(plt|mpv)'
+regex <- 'scores|pfa|PlateletFunctionScore|__(aa|arach|epi|adp|coll)|abc_(plt|mpv)'
 plt_vars <- grep(regex, colnames(meta), value = T, perl = T)
 plt_vars <- plt_vars[!grepl("trt$", plt_vars)]
 
@@ -377,7 +379,10 @@ for (pop in pop_groups) {
             df <- meta %>% 
                 filter(characteristic__treatment_drug_label %in% c(tx, ctrl)) %>%
                 arrange(characteristic__subject_id, characteristic__treatment_drug_label)
-            paired_samples <- df %>% group_by(characteristic__subject_id) %>% filter(n() == 2) %>% pull(characteristic__subject_id)
+            paired_samples <- df %>% 
+                group_by(characteristic__subject_id) %>% 
+                dplyr::filter(n() == 2) %>% 
+                pull(characteristic__subject_id)
             df %<>% 
                 filter(characteristic__subject_id %in% paired_samples) %>%
                 filter(characteristic__subject_id %in% switch(pop,
@@ -568,9 +573,8 @@ ggsave(file.path(outdir, 'dTx', 'dTx_bucket_plot.png'), dTx_bucket_plot, width =
 #======================== Platelet Variables ========================
 dir.create(file.path(outdir, 'platelet_variables'), showWarnings = F)
 # let's compare press to the other platelet variables that are included in the duke data
-colnames(meta)
 
-regex <- 'PlateletFunctionScore|__(aa|arach|epi|adp|coll)|abc_(plt|mpv)'
+regex <- 'PlateletFunctionScore|__(aa|arach|epi|adp|coll)|abc_(plt|mpv)|pfa'
 variables <- grep(regex, colnames(meta), value = TRUE)
 for (var in variables) {
     baseline_plot <- ggplot(
@@ -583,7 +587,7 @@ for (var in variables) {
         labs(x = var, y = 'PRESS Score', title = 'PRESS Scores by Platelet Function Score') +
         stat_smooth(method = 'lm', se = TRUE) +
         stat_cor(method = 'spearman', size = 6)
-    ggsave(file.path(outdir, 'platelet_variables', glue('{var}_baseline_plot.png')), baseline_plot, width = 8, height = 6)
+    ggsave(file.path(outdir, 'platelet_variables', glue('{var}_baseline_plot.pdf')), baseline_plot, width = 8, height = 6)
 
     follow_up_plot <- ggplot(
         meta %>% drop_na(hyper_baseline) %>% filter(cohort == 'group2'), 
@@ -595,7 +599,7 @@ for (var in variables) {
         labs(x = var, y = 'PRESS Score', title = 'PRESS Scores by Platelet Function Score') +
         stat_smooth(method = 'lm', se = TRUE) +
         stat_cor(method = 'spearman', size = 6)
-    ggsave(file.path(outdir, 'platelet_variables', glue('{var}_follow_up_plot.png')), follow_up_plot, width = 8, height = 6)
+    ggsave(file.path(outdir, 'platelet_variables', glue('{var}_follow_up_plot.pdf')), follow_up_plot, width = 8, height = 6)
 }
 or_table_baseline <- purrr::map_df(
     variables[-1], function(y) {
@@ -644,15 +648,35 @@ p <- ggplot(or_table_follow_up %>% filter(!grepl('trt', term)), aes(x = estimate
     theme(legend.position = 'bottom')
 ggsave(file.path(outdir, 'platelet_variables', 'or_table_follow_up_plot.png'), p, width = 8, height = 6)
 
+#======================== Stats Tables ========================
+dir.create(file.path(outdir, 'stats_tables'), showWarnings = F)
+# make some stats tables for the duke data breaking down by press (2-tile, 3-tile, 4-tile, hyper/normal)
+# Age, sex, race, ethnicity, BMI, diabetes, smoking status, platelet score, and then ALL the diff platelet activity measurements
+tmpDat <- meta %>% 
+    filter(cohort == 'group1') %>%
+    mutate(
+        bmi = weight_kg / (height_cm / 100)^2,
+        press_bucket_2 = factor(ntile(scores, 2), levels = 1:2, labels = c('low', 'high')),
+        press_bucket_3 = factor(ntile(scores, 3), levels = 1:3, labels = c('low', 'med', 'high')),
+        press_bucket_4 = factor(ntile(scores, 4), levels = 1:4, labels = c('low', 'med-low', 'med-high', 'high'))
+    )
+comps <- c("hyper_baseline", "long_cohort", "press_bucket_2", "press_bucket_3", "press_bucket_4")
+vois_demo <- grep('(age|sex|race_text|ethnicity_text|bmi|smok)|(scores|pfa|PlateletFunctionScore)', colnames(tmpDat), value = TRUE)
+vois_lta <- grep('__(aa|arach|epi|adp|coll)', colnames(tmpDat), value = TRUE)
+vois <- c(vois_demo, vois_lta)
+for (comp in comps) {
+    stats <- stats_table(drop_na(tmpDat, comp), comp, vois, printArgs = list(showAllLevels = TRUE, printToggle = FALSE))
+    write.csv(stats, file.path(outdir, 'stats_tables', glue('{comp}_stats.csv')))
+} 
+
 #======================== END ========================
 writeLines(capture.output(sessionInfo()), file.path(outdir, "session.log"))
-save.image(file.path(outdir, "image.RData"))
 
 
 
 
 #======================== Scratch Code ========================
-ggplot(meta %>% drop_na(long_cohort), aes(x = long_cohort, y = scores)) +
-    geom_boxplot() +
-    stat_compare_means(method = 't.test') +
-    lims(y = c(-2, 3))
+# ggplot(meta %>% drop_na(long_cohort), aes(x = long_cohort, y = scores)) +
+#     geom_boxplot() +
+#     stat_compare_means(method = 't.test') +
+#     lims(y = c(-2, 3))
