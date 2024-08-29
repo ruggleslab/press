@@ -69,7 +69,52 @@ ggsave(file.path(outdir, "covid_scores", "covid_press_plot.pdf"), covid_press_pl
 #======================== PRESS GSEA ========================
 # em2 <- GSEA(geneList, TERM2GENE = C3_t2g)
 # we can do this for PRESS Up and PRESS Down
-press_up <- 
+press_up <- read.table("output/hyper_geneset_creation/run18_hyper60_hypo40_AGRCONTROL/custom_mgc_hyper_up.txt")
+press_down <- read.table("output/hyper_geneset_creation/run18_hyper60_hypo40_AGRCONTROL/custom_mgc_hyper_down.txt")
+
+press_up$direction <- "PRESS Up"
+press_down$direction <- "PRESS Down"
+
+press_t2g <- rbind(press_up, press_down)
+colnames(press_t2g) <- c("gene", "term")
+press_t2g <- press_t2g %>% dplyr::select(term, gene)
+
+## COVID data preranked
+utah_covid <- read.csv("data/20240729_covid_figure/utahcovid_covidcontrol/utahcovid_covidcontrol_deseq.csv", row.names = 1)
+utah_covid_prerank <- get_fc_list(utah_covid, "log2FoldChange")
+
+nyu_covid <- read.csv("data/20240729_covid_figure/covid_covidcontrol/covid_covidcontrol_wcontrol_deseq.csv", row.names = 1)
+nyu_covid_prerank <- get_fc_list(nyu_covid, "log2FoldChange")
+
+# get the gsea
+nyu_gsea <- GSEA(nyu_covid_prerank, TERM2GENE = press_t2g)
+utah_gsea <- GSEA(utah_covid_prerank, TERM2GENE = press_t2g)
+covid_gsea <- rbind(
+    as.data.frame(nyu_gsea) %>% mutate(dataset = "NYU"),
+    as.data.frame(utah_gsea) %>% mutate(dataset = "UTAH")
+)
+
+# let's start with some ridge plots
+nyu_ridge <- ridgeplot(nyu_gsea)
+utah_ridge <- ridgeplot(utah_gsea)
+ridges <- cowplot::plot_grid(nyu_ridge, utah_ridge, nrow = 2, labels = c("NYU", "UTAH"))
+ggsave(file.path(outdir, "covid_scores", "ridge_plots.pdf"), ridges, width = 12, height = 5)
+
+# now some walkplots
+nyu_walk <- gseaplot2(nyu_gsea, 1:2)
+ggplot2::ggsave(file.path(outdir, "covid_scores", "nyu_walk.pdf"), nyu_walk, width = 10, height = 5)
+utah_walk <- gseaplot2(utah_gsea, 1:2)
+ggplot2::ggsave(file.path(outdir, "covid_scores", "utah_walk.pdf"), utah_walk, width = 10, height = 5)
+
+#======================== Dotplot ========================
+covid_gsea[, 1:8]
+dotplot <- ggplot(covid_gsea, aes(x = ID, y = dataset, size = -log(p.adjust), color = factor(sign(NES)))) +
+    geom_point() +
+    scale_size_area(max_size = 12) +
+    scale_color_manual(values = c("blue", "red")) +
+    labs(x = NULL, y = NULL, size = "-log(p.adjust)", color = "NES")
+dotplot
+ggplot2::ggsave(file.path(outdir, "covid_scores", "dotplot.pdf"), dotplot, width = 8, height = 4)
 
 #======================== END ========================
 writeLines(capture.output(sessionInfo()), file.path(outdir, "session.log"))
