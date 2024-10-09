@@ -6,7 +6,7 @@
 
 This repository contains the code used to create PRESS. Is is mainly written in R and Python.
 
-The code as is relies on a config file to run. The corresponding manuscript can be found here [PRESS](https://www.nature.com/articles/s41467-024-50994-7).
+The code as is relies on a config file to run. The corresponding manuscript can be found [here](https://www.nature.com/articles/s41467-024-50994-7).
 
 The PRESS Model can be run either using the 03_run_press.py script or by downloading and using the PRESS model from this repository. If you are downloading the model, we recommend you use the included scaler unless you believe there will be significant batch effects in your data. Data should be preprocessed and normalized using the log2 median of ratios method.
 
